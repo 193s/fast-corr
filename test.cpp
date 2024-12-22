@@ -3,37 +3,122 @@
 #include <iomanip>
 #include <limits>
 #include <chrono>
+#include <random>
+#include <cassert>
 #include "spearman-algos.hpp"
 #include "kendall-algos.hpp"
 using namespace std;
 
 const int LOOP = 3;
+const double EPS = 1e-9;
 
-int main() {
-  auto x = OfflineKendall<double>();
-  x.push_back(0);
-  x.push_back(1);
-  x.push_back(1);
-  x.push_back(2);
-  x.push_back(2);
-  x.push_back(1);
-  x.push_back(321);
-  cout << x.kendall_tau() << "\n";
+bool assert_eq(vector<int> x, vector<int> y) {
+  if (x.size() != y.size()) {
+    cout << "assertion failed: size does not match\n";
+    exit(1);
+  }
+  for (int i=0; i<x.size(); i++) if (x[i] != y[i]) {
+    cout<<"x={";for(int i:x)cout<<i<<",";cout<<"}, y={";for(int i:y)cout<<i<<",";cout<<"}\n";
+    cout <<"x["<<i<<"]="<<x[i]<<", y["<<i<<"]="<<y[i]<<"\n";
+    cout << "assertion failed\n";
+    exit(1);
+  }
+  return true;
+}
 
+// tests on helper functions
+void tests_on_helper_functions() {
+  // vector<int> convert_array_to_rank(vector<T> arr)
+  // [3, 12123, 0] -> [2, 3, 1]*2
+  assert_eq(convert_array_to_rank(vector<double>({3, 123123, 0})), vector<int>({4, 6, 2}));
+  // [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
+  assert_eq(convert_array_to_rank(vector<double>({1, 2, 2, 2, 5, 5, 7})), vector<int>({2, 6, 6, 6, 11, 11, 14}));
+  // [1, 1, 1, 1] -> [2.5, 2.5, 2.5, 2.5]
+  assert_eq(convert_array_to_rank(vector<double>({1, 1, 1, 1})), vector<int>({5, 5, 5, 5}));
+
+  //
+  OnlineSpearmanBase<double> *sp;
+
+  for (int repeat=0; repeat<3; repeat++) {
+    if (repeat == 0) sp = new OnlineSpearman<double>();
+    else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
+    else sp = new OfflineSpearman<double>();
+
+    assert(isnan(sp->spearman_r())); // spearman({}) = nan
+    sp->push_back(0);
+    assert(isnan(sp->spearman_r())); // spearman({0}) = nan
+    sp->push_back(1);
+    assert(sp->spearman_r() == 1.0); // spearman({0, 1}) = 1
+
+    // spearman({0, 1, 2, ..., n}) = 1
+    for (int i=0; i<123; i++) {
+      sp->push_back(2+i);
+      if (sp->spearman_r() != 1.0) {
+        cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
+      }
+      assert(sp->spearman_r() == 1.0);
+    }
+    for (int i=0; i<123; i++) {
+      sp->pop_front();
+      if (sp->spearman_r() != 1.0) {
+        cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
+      }
+      assert(sp->spearman_r() == 1.0);
+    }
+  }
+}
+
+
+int main(int argc, char *argv[]) {
+  tests_on_helper_functions();
+  // tests
+  bool random_input = false;
+  bool duplicate_test = false;
+  if (argc >= 2) {
+    if (argv[1][0] == 'r') {
+      random_input = true;
+    }
+    else if (argv[1][0] == 'd') {
+      random_input = true;
+      duplicate_test = true;
+    }
+  }
   int N, T;
   cin >> T >> N;
-  vector<double> A(T);
-  for (int i=0; i<T; i++) cin >> A[i];
   cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
-
-  // input should not have duplicate values
-  for (int i=0; i<N; i++) {
-    for (int j=i+1; j<N; j++) {
-      if (A[i] == A[j]) {
-        cout <<"duplicate, error\n";
-        exit(1);
+  vector<double> A(T);
+  if (random_input) {
+    mt19937 mt;
+    for (int i=0; i<T; i++) A[i] = mt();
+    if (duplicate_test) {
+      for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
+      shuffle(A.begin(), A.end(), mt);
+      cout << "testing with random arrays with duplicate values...\n";
+    }
+    else {
+      cout << "testing with random arrays without duplicate values...\n";
+      for (int i=0; i<T; i++) {
+        for (int j=i+1; j<T; j++) {
+          if (A[i] == A[j]) {
+            cout << "error: duplicate\n";
+            exit(1);
+          }
+        }
       }
     }
+  }
+  else {
+    for (int i=0; i<T; i++) cin >> A[i];
+
+    for (int i=0; i<T; i++) {
+      for (int j=i+1; j<T; j++) {
+        if (A[i] == A[j]) {
+          duplicate_test = true;
+          break;
+        }
+      }
+    }
+    if (duplicate_test) cout << "input contains duplicate values\n";
   }
 
   // required for performance measurement
@@ -42,7 +127,7 @@ int main() {
   using std::chrono::duration;
   using std::chrono::milliseconds;
 
-  if (true) {
+  if (false) {
     cout << "========= KENDALL =========\n";
     OnlineKendallBase<double> *kd;
     vector<double> ds;
@@ -90,7 +175,8 @@ int main() {
     //imp_list.push_back(*(new OnlineSpearman<double>()));
     //  new OnlineSpearmanLinear<double>(), new OfflineSpearman<double>(), };
 
-    vector<int> ds;
+    //vector<long long> ds;
+    vector<double> rs;
     for (int repeat=0; repeat<3; repeat++) {
       auto t1 = high_resolution_clock::now();
       if (repeat == 0) {
@@ -115,12 +201,20 @@ int main() {
           sp->push_back(A[i]);
           sp->pop_front();
           // check results
-          int d = sp->spearman_d();
+          double r = sp->spearman_r();
+          if (_ == 0 && repeat == 0) rs.push_back(r);
+          else if (abs(r - rs[i-(N-1)]) > EPS) {
+            cout << "verify error: (out) r="<<rs[i-(N-1)]<<" != (correct) "<<r<< endl;
+            exit(1);
+          }
+          /*
+          long long d = sp->spearman_d();
           if (_ == 0 && repeat == 0) ds.push_back(d);
           else if (d != ds[i-(N-1)]) {
             cout << "verify error: (out) d="<<ds[i-(N-1)]<<" != (correct) "<<d<< endl;
             exit(1);
           }
+          */
         }
         while (sp->size()) sp->pop_front(); // clean up
       }
