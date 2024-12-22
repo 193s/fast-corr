@@ -126,9 +126,11 @@ class OnlineKendall : public OnlineKendallBase<T> {
     min_y_ctr++;
     // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
     vals.pop_front();
-    ctr_tree.erase(z); // FIXME
+    int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
+    ctr_tree.erase(ctr_tree.find_by_order(num_lower));
+
     K -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
-    L -= ctr_tree.order_of_key(make_pair(x_val, -1));
+    L -= num_lower;
     n1 -= --ctr_X[x_val];
   }
   void push_front(T x_val) {
@@ -143,8 +145,10 @@ class OnlineKendall : public OnlineKendallBase<T> {
     max_y_ctr--;
     T x_val = z.first;
     vals.pop_back();
-    ctr_tree.erase(z); //FIXME
-    K -= ctr_tree.order_of_key(make_pair(x_val, -1));
+    int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
+    ctr_tree.erase(ctr_tree.find_by_order(num_lower));
+
+    K -= num_lower;
     L -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
     n1 -= --ctr_X[x_val];
   }
