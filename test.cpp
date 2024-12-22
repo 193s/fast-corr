@@ -4,6 +4,7 @@
 #include <limits>
 #include <chrono>
 #include <random>
+#include <ctime>
 #include <cassert>
 #include "spearman-algos.hpp"
 #include "kendall-algos.hpp"
@@ -88,15 +89,16 @@ int main(int argc, char *argv[]) {
   cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
   vector<double> A(T);
   if (random_input) {
-    mt19937 mt;
+    int seed = time(NULL);
+    mt19937 mt(seed);
     for (int i=0; i<T; i++) A[i] = mt();
     if (duplicate_test) {
       for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
       shuffle(A.begin(), A.end(), mt);
-      cout << "testing with random arrays with duplicate values...\n";
+      cout << "testing with random arrays with duplicate values... seeed="<<seed<<"\n";
     }
     else {
-      cout << "testing with random arrays without duplicate values...\n";
+      cout << "testing with random arrays without duplicate values... seed="<<seed<<"\n";
       for (int i=0; i<T; i++) {
         for (int j=i+1; j<T; j++) {
           if (A[i] == A[j]) {
