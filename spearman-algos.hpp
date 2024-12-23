@@ -209,6 +209,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
     void pop_front() {
       T x_val = X_val.front();
       int dup = --duplicate_counter[x_val]; //assert dup>=0
+      if (dup == 0) duplicate_counter.erase(x_val);
       OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
 
       int z = 0;
