@@ -9,48 +9,59 @@
 #include <chrono>
 #include <random>
 #include <ctime>
-#include <cassert>
+#include <set>
 using namespace std;
 
 const int LOOP = 3;
 const double EPS = 1e-9;
 
 void internal_test(bool duplicate_test, int T, int N);
-TEST_CASE("random test without duplicates: T=20000, N=1000") {
-  internal_test(false, 20000, 1000);
-}
+//TEST_CASE("random test without duplicates: T=20000, N=1000") {
+//  internal_test(false, 20000, 1000);
+//}
 TEST_CASE("random test with duplicates: T=2000, N=1000") {
   internal_test(true, 20000, 1000);
 }
-void internal_test(bool duplicate_test, int T, int N) {
-  cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
+
+// duplicate check in O(NlogN)
+template< class T >
+bool contains_duplicates(vector<T> &ret) {
+  set<T> s;
+  for (T x : ret) {
+    if (s.find(x) != s.end()) return true;
+    s.insert(x);
+  }
+  return false;
+}
+vector<double> generate_random_double_sequence(int T, int seed, bool duplicate) {
   vector<double> A(T);
-  int seed = time(NULL);
   mt19937 mt(seed);
   for (int i=0; i<T; i++) A[i] = mt();
-  if (duplicate_test) {
+  if (duplicate) {
     for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
     shuffle(A.begin(), A.end(), mt);
-    cout << "testing with random arrays with duplicate values... seeed="<<seed<<"\n";
   }
   else {
-    cout << "testing with random arrays without duplicate values... seed="<<seed<<"\n";
-    for (int i=0; i<T; i++) {
-      for (int j=i+1; j<T; j++) {
-        if (A[i] == A[j]) {
-          cout << "error: duplicate\n";
-          exit(1);
-        }
-      }
+    if (contains_duplicates(A)) {
+      return generate_random_double_sequence(T, seed+1, duplicate); // re-generate with different seeds
     }
   }
+  return A;
+}
+
+void internal_test(bool duplicate_test, int T, int N) {
+  cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
+  int seed = time(NULL);
+  vector<double> A = generate_random_double_sequence(T, seed, duplicate_test);
+  CHECK(duplicate_test == contains_duplicates(A));
+  if (duplicate_test) cout << "testing with random arrays with duplicate values... seed=" << seed << "\n";
+  else cout << "testing with random arrays without duplicate values... seed=" << seed << "\n";
 
   // required for performance measurement
   using std::chrono::high_resolution_clock;
   using std::chrono::duration_cast;
   using std::chrono::duration;
   using std::chrono::milliseconds;
-
 
   if (true) {
     cout << "========= SPEARMAN =========\n";

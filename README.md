@@ -1,4 +1,5 @@
 # fast-nonparametric-corr
+[![C/C++ CI](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml)  
 Currently works only on g++ with -O1/O2/O3 options.  
 
 ## testing:
