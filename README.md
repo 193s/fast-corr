@@ -2,17 +2,17 @@
 Currently works only on g++ with -O1/O2/O3 options.  
 
 ## testing:
-`/usr/local/bin/g++-14 test/basic_tests.cpp -O3`  
+`g++-14 test/basic_tests.cpp -O3`  
 
 ## benchmark:
-`/usr/local/bin/g++-14 test/benchmark.cpp -O3`  
+`g++-14 test/benchmark.cpp -O3`  
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
 - `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000
 -->
 
 ## running sample code:
-`/usr/local/bin/g++-14 sample.cpp -O3`  
+`g++-14 sample.cpp -O3`  
 ```c++
 #include <iostream>
 #include <vector>
