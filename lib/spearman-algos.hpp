@@ -135,6 +135,7 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
   public:
     deque<T> real_vals;
     RBTree::Node *root = tree.make_tree();
+    //OnlineSpearman() { }
 
     // add a new element
     void push_back(T x_val) {

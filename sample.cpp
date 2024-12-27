@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <limits>
-#include "spearman-algos.hpp"
-#include "kendall-algos.hpp"
+#include "lib/spearman-algos.hpp"
+#include "lib/kendall-algos.hpp"
 using namespace std;
 
 int main(int argc, char *argv[]) {

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "rbst-base.hpp"
 
 template <typename T, typename E>
