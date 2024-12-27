@@ -1,0 +1,23 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: make
+      run: make all
+    - name: sample test
+      run: ./sample.out
+    - name: basic_tests
+      run: ./basic_tests.out
+    - name: benchmark
+      run: ./benchmark.out
