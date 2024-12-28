@@ -70,7 +70,8 @@ void internal_random_op_test(int Q, bool duplicate_test) {
   while (operations.size() < Q) {
     switch (mt()%2) {
       case 0:
-        operations.push_back(make_pair(PUSH_BACK, pool[operations.size()]));
+        operations.push_back(make_pair(mt()%2?PUSH_BACK:PUSH_FRONT, pool[operations.size()]));
+        //operations.push_back(make_pair(PUSH_BACK, pool[operations.size()]));
         operations.push_back(make_pair(CALCULATE_R, 0));
         n++;
         break;
@@ -79,7 +80,9 @@ void internal_random_op_test(int Q, bool duplicate_test) {
           // invalid operation: try again
           continue;
         }
-        operations.push_back(make_pair(POP_FRONT, 0));
+        continue;
+        operations.push_back(make_pair(mt()%2?POP_FRONT:POP_BACK, 0));
+        //operations.push_back(make_pair(POP_FRONT, 0));
         operations.push_back(make_pair(CALCULATE_R, 0));
         n--;
         break;
@@ -132,6 +135,7 @@ void internal_test(vector< pair<int, double> > operations, bool verbose) {
         // O(logN) efficient algorithm
         if (verbose) cout << "[OnlineSpearman] O(logN)\n";
         sp = new OnlineSpearman<double>();
+        //sp = new OnlineSpearmanLinear<double>();
       }
       else if (repeat == 1) {
         // O(N) insert sort implementation
@@ -148,10 +152,10 @@ void internal_test(vector< pair<int, double> > operations, bool verbose) {
         for (auto p : operations) {
           double x_val = p.second;
           switch (p.first) {
-            //case PUSH_FRONT: sp->push_front(x_val); break;
+            case PUSH_FRONT: sp->push_front(x_val); break;
             case PUSH_BACK:  sp->push_back(x_val);  break;
             case POP_FRONT:  sp->pop_front();       break;
-            //case POP_BACK:   sp->pop_back();        break;
+            case POP_BACK:   sp->pop_back();        break;
             case CALCULATE_R:
               double r = sp->spearman_r();
               if (_ == 0 && repeat == 0) rs.push_back(r);

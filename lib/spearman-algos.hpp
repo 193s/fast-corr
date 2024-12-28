@@ -24,9 +24,9 @@ template< class T >
 class OnlineSpearmanBase {
   public:
   virtual void push_back(T x_val);
-  //virtual void push_front(T x_val);
+  virtual void push_front(T x_val);
   virtual void pop_front();
-  //virtual void pop_back();
+  virtual void pop_back();
   virtual d2_type spearman_d();
   virtual int size();
   double spearman_r() {
@@ -133,6 +133,22 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
   CountingTree ctr_tree;
   int N = 0;
   int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
+  inline pair<int, int> _add_value(T x_val) {
+    int z = ctr_tree.order_of_key(make_pair(x_val, -1)); // # of < x_val
+    int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z;
+    OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
+    ctr_tree.insert(make_pair(x_val, id_for_tree++));
+    return make_pair(z, dup);
+  }
+  inline pair<int, int> _remove_value(T x_val) {
+    int z = ctr_tree.order_of_key(make_pair(x_val, -1));
+    int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z - 1;
+    ctr_tree.erase(ctr_tree.find_by_order(z)); // erase @z (@z+dup) will also work
+    // ctr_tree.erase(make_pair(x_val, <id to erase>));
+    assert(dup >= 0);
+    OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
+    return make_pair(z, dup);
+  }
 
   public:
     deque<T> real_vals;
@@ -142,12 +158,10 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
     // add a new element
     void push_back(T x_val) {
       real_vals.push_back(x_val);
-      int z = ctr_tree.order_of_key(make_pair(x_val, -1)); // # of < x_val
-      int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z;
-      OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
-      ctr_tree.insert(make_pair(x_val, id_for_tree++));
+      auto p = _add_value(x_val);
+      int z = p.first, dup = p.second;
 
-      // new element with (x=z+1+dup/2, y=N+1) -> d1 = z-N+(dup/2)
+      // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
       d1_type new_d1 = (z-N)*TWO + dup; // *= 2
       SNode newelem = SNode(new_d1, (d2_type)new_d1*new_d1, 1);
 
@@ -156,8 +170,27 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
         assert(tree.size(root) == N);
         // add +1(*2) to [z+dup, N) & add  +0.5(*2) to [z, z+dup)
         if (z+dup < N) tree.apply(root, z+dup, N, +1*TWO); // +1(*2) to [z+dup, N)
-        if (dup > 0 && z < N) tree.apply(root, z, z+dup, +1); // +0.5(*2) to [z, z+dup)
-        tree.insert(root, z, newelem); // insert new element
+        if (dup > 0)   tree.apply(root, z, z+dup, +1); // +0.5(*2) to [z, z+dup)
+        tree.insert(root, z+dup, newelem); // insert new element @ z+dup
+      }
+      N += 1;
+    }
+    // add a new element
+    void push_front(T x_val) {
+      real_vals.push_front(x_val);
+      auto p = _add_value(x_val);
+      int z = p.first, dup = p.second;
+
+      // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
+      d1_type new_d1 = (z-0)*TWO + dup; // *= 2
+      SNode newelem = SNode(new_d1, (d2_type)new_d1*new_d1, 1);
+
+      if (root == NULL) root = tree.build({newelem});
+      else {
+        assert(tree.size(root) == N);
+        if (dup > 0) tree.apply(root, z, z+dup, -1); // [z, z+dup) -= 0.5(*2)
+        if (z > 0)   tree.apply(root, 0, z, -1*TWO); // [0, z) -= 1(*2) (y += 1)
+        tree.insert(root, z, newelem); // insert new element @ z
       }
       N += 1;
     }
@@ -165,17 +198,24 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
     void pop_front() {
       T x_val = real_vals.front();
       real_vals.pop_front();
+      auto p = _remove_value(x_val);
+      int z = p.first, dup = p.second;
 
-      int z = ctr_tree.order_of_key(make_pair(x_val, -1));
-      int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z - 1;
-      ctr_tree.erase(ctr_tree.find_by_order(z)); // erase @z (@z+dup) will also work
-      // ctr_tree.erase(make_pair(x_val, <id to erase>));
-      assert(dup >= 0);
-      OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
-
-      if (z>0) tree.apply(root, 0, z, +1*TWO); // [0, z) += 1 (*2)
+      tree.erase(root, z); // erase @z
+      if (z>0)   tree.apply(root, 0, z, +1*TWO); // [0, z) += 1 (*2)
       if (dup>0) tree.apply(root, z, z+dup, +1); // [z, z+dup) += 0.5(*2) (y-=1, x-=0.5)
-      tree.erase(root, z+dup); // erase @z (@z+dup will work too)
+      N -= 1;
+    }
+    // remove an oldest element
+    void pop_back() {
+      T x_val = real_vals.back();
+      real_vals.pop_back();
+      auto p = _remove_value(x_val);
+      int z = p.first, dup = p.second;
+
+      tree.erase(root, z+dup); // erase @z+dup
+      if (dup>0)       tree.apply(root, z, z+dup, -1);       // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
+      if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*TWO); // [z+dup, )  -= 1(*2)
       N -= 1;
     }
     d2_type spearman_d() {
@@ -212,11 +252,22 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
       int z = 0;
       for (T x : X_val) if (x < x_val) z++;
       X_val.push_back(x_val);
-
       D.push_back(0);
       for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i] + 1*TWO; // [z+dup, N) += 1(*2)
-      for (int i=z+dup-1; i>=z; i--) D[i+1] = D[i] + 1;     // [z, z+dup) += 0.5(*2) (& insert@z)
-      D[z] = (z - N)*TWO + dup; // D_i := X_i - Y_i (*2)
+      for (int i=z+dup-1; i>=z; i--) D[i] = D[i] + 1;     // [z, z+dup) += 0.5(*2) (& insert@z+dup)
+      D[z+dup] = (z - N)*TWO + dup; // D_i := X_i - Y_i (*2)
+      N += 1;
+    }
+    void push_front(T x_val) {
+      int dup = _add_value(x_val);
+      int z = 0;
+      for (T x : X_val) if (x < x_val) z++;
+      X_val.push_front(x_val);
+      D.push_back(0);
+      for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i];     // [z+dup, N) += 0 (*2) (x += 1, y += 1)
+      for (int i=z+dup-1; i>=z; i--) D[i+1] = D[i] - 1; // [z, z+dup) += 0.5-1(*2) (& insert@z)
+      for (int i=z-1; i>=0; i--)     D[i] -= 1*TWO;     // [0, z) -= 1(*2) (y += 1)
+      D[z] = (z - 0)*TWO + dup; // D_i := X_i - Y_i (*2)
       N += 1;
     }
     // remove an oldest element
@@ -225,17 +276,28 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
       int dup = _remove_value(x_val);
       int z = 0;
       for (T x : X_val) if (x < x_val) z++;
-      for (int i=z+dup; i<N-1; i++) D[i] = D[i+1]; // erase @z+dup
-      for (int i=0; i<z; i++) D[i] += 1*TWO; // [0, z) += 1 (*2)
-      for (int i=z; i<z+dup; i++) D[i] += 1; // [z, z+dup) += 0.5(*2) (y-=1, x-=0.5)
+      for (int i=0; i<z; i++)       D[i] += 1*TWO;     // [0, z) += 1 (*2)
+      for (int i=z; i<z+dup; i++)   D[i] = D[i+1] + 1; // erase @z & [z, z+dup) += 0.5(*2)
+      for (int i=z+dup; i<N-1; i++) D[i] = D[i+1];
       N -= 1;
       X_val.pop_front();
+      D.pop_back();
+    }
+    void pop_back() {
+      T x_val = X_val.back();
+      int dup = _remove_value(x_val);
+      int z = 0;
+      for (T x : X_val) if (x < x_val) z++;
+      //for (int i=0; i<z; i++) D[i] += 1*TWO; // [0, z) += 0-0 (*2)
+      for (int i=z; i<z+dup; i++)   D[i] -= 1;             // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
+      for (int i=z+dup; i<N-1; i++) D[i] = D[i+1] - 1*TWO; // erase@z+dup & [z+dup, ) -= 1(*2)
+      N -= 1;
+      X_val.pop_back();
       D.pop_back();
     }
     d2_type spearman_d() {
       d2_type d = 0;
       for (int i=0; i<N; i++) d += (d2_type)D[i]*D[i];
-      //cout<<"d="<<d<<"\n";
       return d;
     }
     int size() { return N; }
@@ -249,23 +311,45 @@ class OfflineSpearman : public OnlineSpearmanBase<T> {
   int N = 0;
   deque<T> X_val;
   map<T, int> duplicate_counter;
+  // internal function: returns the number of existing pairs with the same x-values (>=0)
+  inline int _add_value(T x_val) {
+    int dup = duplicate_counter[x_val]++;
+    OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
+    return dup;
+  }
+  // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
+  inline int _remove_value(T x_val) {
+    int dup = --duplicate_counter[x_val]; //assert dup>=0
+    if (dup == 0) duplicate_counter.erase(x_val);
+    OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
+    return dup;
+  }
   public:
     // add a new element
     void push_back(T x_val) {
-      int dup = duplicate_counter[x_val]++;
-      OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
-
+      _add_value(x_val);
       N += 1;
       X_val.push_back(x_val);
+    }
+    // add a new element
+    void push_front(T x_val) {
+      _add_value(x_val);
+      N += 1;
+      X_val.push_front(x_val);
     }
     // remove an oldest element
     void pop_front() {
       T x_val = X_val.front();
-      int dup = --duplicate_counter[x_val]; //assert dup>=0
-      OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
-
+      _remove_value(x_val);
       N -= 1;
       X_val.pop_front();
+    }
+    // remove an newest element
+    void pop_back() {
+      T x_val = X_val.back();
+      _remove_value(x_val);
+      N -= 1;
+      X_val.pop_back();
     }
     d2_type spearman_d() {
       int n = X_val.size();
