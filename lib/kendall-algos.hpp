@@ -95,8 +95,10 @@ double offline_slow_kendall_tau(deque<pair<T, T> > vals) {
 template< class T >
 class OnlineKendallBase {
   public:
+  virtual void push_front(T x_val);
   virtual void push_back(T x_val);
   virtual void pop_front();
+  virtual void pop_back();
   virtual double kendall_tau();
   virtual int size();
 };

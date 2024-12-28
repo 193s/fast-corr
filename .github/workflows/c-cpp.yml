@@ -16,8 +16,8 @@ jobs:
     - name: make
       run: export GPP='g++ --std=c++14';make all
     - name: sample test
-      run: ./sample.out
+      run: ./sample.out -d
     - name: basic_tests
-      run: ./basic_tests.out
+      run: ./basic_tests.out -d
     - name: benchmark
-      run: ./benchmark.out
+      run: ./benchmark.out -d

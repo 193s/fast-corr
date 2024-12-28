@@ -24,7 +24,9 @@ template< class T >
 class OnlineSpearmanBase {
   public:
   virtual void push_back(T x_val);
+  //virtual void push_front(T x_val);
   virtual void pop_front();
+  //virtual void pop_back();
   virtual d2_type spearman_d();
   virtual int size();
   double spearman_r() {
@@ -116,12 +118,12 @@ inline SNode addall(SNode x, int a) {
   return x;
 }
 inline int none_h(int x, int y) { return x+y; }
-SNode ts(SNode a) { return a; }
+inline SNode ts(SNode a) { return a; }
 
 //< class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
 
 // Efficient Online Implementation of Spearman's rank correlation with Binary Search Tree
-// adding/removing a value requires O(logN) timespace
+// adding/removing a value requires O(logN) time complexity and O(N) space complexity
 template< class T >
 class OnlineSpearman : public OnlineSpearmanBase<T> {
   using RBTree = LazyReversibleRBST< SNode, int, F, addall, none_h, ts >;
@@ -130,7 +132,7 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
   using CountingTree = __gnu_pbds::tree<pair<T, int> ,null_type,less<pair<T, int> >,rb_tree_tag,tree_order_statistics_node_update>;
   CountingTree ctr_tree;
   int N = 0;
-  int id_for_tree = 0; // add unique id to allow for duplicate values in CountingTree
+  int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
 
   public:
     deque<T> real_vals;
@@ -183,19 +185,30 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
     int size() { return N; }
 };
 // Online Implementation of Spearman's rank correlation without Binary Search Tree
-// adding/removing a value requires O(N) timespace
+// adding/removing a value requires O(N) time complexity and O(N) space complexity
 template< class T >
 class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
   int N = 0;
   vector<int> D;
   deque<T> X_val;
   map<T, int> duplicate_counter;
+  // internal function: returns the number of existing pairs with the same x-values (>=0)
+  inline int _add_value(T x_val) {
+    int dup = duplicate_counter[x_val]++;
+    OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
+    return dup;
+  }
+  // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
+  inline int _remove_value(T x_val) {
+    int dup = --duplicate_counter[x_val]; //assert dup>=0
+    if (dup == 0) duplicate_counter.erase(x_val);
+    OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
+    return dup;
+  }
   public:
     // add a new element
     void push_back(T x_val) {
-      int dup = duplicate_counter[x_val]++;
-      OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
-
+      int dup = _add_value(x_val);
       int z = 0;
       for (T x : X_val) if (x < x_val) z++;
       X_val.push_back(x_val);
@@ -209,10 +222,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
     // remove an oldest element
     void pop_front() {
       T x_val = X_val.front();
-      int dup = --duplicate_counter[x_val]; //assert dup>=0
-      if (dup == 0) duplicate_counter.erase(x_val);
-      OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
-
+      int dup = _remove_value(x_val);
       int z = 0;
       for (T x : X_val) if (x < x_val) z++;
       for (int i=z+dup; i<N-1; i++) D[i] = D[i+1]; // erase @z+dup
@@ -233,8 +243,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
 
 
 // Traditional Implementation of Spearman's rank correlation:
-// adding/removing a value requires O(NlogN) timespace
-// (this can be done in O(N) if implemented properly)
+// adding/removing a value requires O(NlogN) time complexity and O(M) space complexity
 template< class T >
 class OfflineSpearman : public OnlineSpearmanBase<T> {
   int N = 0;
