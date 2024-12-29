@@ -14,10 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: make
-      run: export GPP='g++ --std=c++14';make all
+      run: GPP='g++ --std=c++14' make all
     - name: sample test
-      run: ./sample.out -d
+      run: ./sample -d
     - name: basic_tests
-      run: ./basic_tests.out -d
+      run: ./basic_tests -d
     - name: benchmark
-      run: ./benchmark.out -d
+      run: ./benchmark -d

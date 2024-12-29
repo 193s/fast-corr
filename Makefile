@@ -1,15 +1,15 @@
 GPP ?= g++-14
-all: ./basic_tests.out ./benchmark.out ./sample.out
+all: ./basic_tests ./benchmark ./sample
 LIB=lib/spearman-algos.hpp lib/kendall-algos.hpp
 
-./basic_tests.out: $(LIB) test/basic_tests.cpp
-	$(GPP) test/basic_tests.cpp -O3 -o basic_tests.out
+./basic_tests: $(LIB) test/basic_tests.cpp
+	$(GPP) test/basic_tests.cpp -O3 -o basic_tests
 
-./benchmark.out: $(LIB) test/benchmark.cpp
-	$(GPP) test/benchmark.cpp -O3 -o benchmark.out
+./benchmark: $(LIB) test/benchmark.cpp
+	$(GPP) test/benchmark.cpp -O3 -o benchmark
 
-./sample.out: $(LIB) sample.cpp
-	$(GPP) sample.cpp -O3 -o sample.out
+./sample: $(LIB) sample.cpp
+	$(GPP) sample.cpp -O3 -o sample
 
 clean:
-	rm -f *.out
+	rm -f basic_tests benchmark sample

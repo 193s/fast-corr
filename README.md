@@ -2,17 +2,43 @@
 [![C/C++ CI](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml)  
 Currently works only on g++ with -O1/O2/O3 options.  
 
-## testing:
+## APIs
+| Class | time complexity of each operation |
+| ---- | ---- |
+| OnlineSpearman | O(logN) |
+| OnlineSpearmanLinear | O(N) |
+| OnlineKendall | O(logN) |
+
+### OnlineSpearman\<T\>
+- `void push_front(T x_val)`
+- `void push_back(T x_val)`
+- `void pop_front()`
+- `void pop_back()`
+- `double spearman_r()`
+
+OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
+
+### OnlineKendall\<T\>
+- `void push_front(T x_val)`
+- `void push_back(T x_val)`
+- `void pop_front()`
+- `void pop_back()`
+- `double kendall_tau()`  
+
+
+## Installation
+`git clone https://github.com/193s/fast-nonparametric-corr/`
+### testing:
 `g++-14 test/basic_tests.cpp -O3`  
 
-## benchmark:
+### benchmark:
 `g++-14 test/benchmark.cpp -O3`  
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
 - `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000
 -->
 
-## running sample code:
+### running sample code:
 `g++-14 sample.cpp -O3`  
 ```c++
 #include <iostream>

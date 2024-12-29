@@ -1,1 +1,5 @@
 *.out
+benchmark
+sample
+basic_tests
+
