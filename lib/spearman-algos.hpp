@@ -35,12 +35,19 @@ class OnlineSpearmanBase {
     int n = size();
     if (n == 1) return NAN;
     d2_type n3 = (d2_type)n*((d2_type)n*n-1);
-    //cout<<"n="<<n<<", d="<<d<<", Sx="<<Sx<<"\n";
+    //cout<<"n="<<n<<", d="<<d<<"/4, Sx="<<Sx<<"\n";
     if (Sx == 0) {
       return 1.0 - (6.0/(TWO*TWO))*d / n3;
     }
     else {
-      return ((n3-Sx/2) - (6.0/(TWO*TWO))*d) / (n3-sqrt(Sx*n3));
+      // general formula:
+      // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
+      // when Sy = 0,
+      // = (1-(6.0/n3)*(D + Sx/12)) / (sqrt(1 - Sx/n3))
+      // = (n3-6.0*(D + Sx/12)) / sqrt(n3*n3 - Sx*n3)
+      // = (n3 - Sx/2.0 - 6.0*D) / sqrt(n3*n3 - Sx*n3)
+      // = (2*n3 - Sx - 3*(4D)) / (2*sqrt(n3*n3 - Sx*n3))
+      return (2.0*n3 - Sx - (12.0/(TWO*TWO))*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
     }
   }
   protected:
@@ -372,7 +379,6 @@ class OfflineSpearman : public OnlineSpearmanBase<T> {
       for (int i=1; i<=n; i++) Y[i-1] = i*TWO; // *2
       d2_type d = 0;
       for (int i=0; i<n; i++) d += (d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
-      //cout<<"d="<<d<<"\n";
       return d;
     }
     int size() { return N; }
