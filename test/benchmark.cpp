@@ -28,7 +28,6 @@ TEST_CASE("random test with completely random operations: T=5000") {
 TEST_CASE("random test with duplicates: T=10000, N=1000 sequential operations") {
   internal_sequential_test(10000, 1000, true);
 }
-
 // duplicate check in O(NlogN)
 template< class T >
 bool contains_duplicates(vector<T> &ret) {
@@ -70,6 +69,7 @@ void internal_random_op_test(int Q, bool duplicate_test) {
   while (operations.size() < Q) {
     switch (mt()%2) {
       case 0:
+        // push_back or push_front
         operations.push_back(make_pair(mt()%2?PUSH_BACK:PUSH_FRONT, pool[operations.size()]));
         //operations.push_back(make_pair(PUSH_BACK, pool[operations.size()]));
         operations.push_back(make_pair(CALCULATE_R, 0));
@@ -80,11 +80,13 @@ void internal_random_op_test(int Q, bool duplicate_test) {
           // invalid operation: try again
           continue;
         }
-        continue;
-        operations.push_back(make_pair(mt()%2?POP_FRONT:POP_BACK, 0));
-        //operations.push_back(make_pair(POP_FRONT, 0));
-        operations.push_back(make_pair(CALCULATE_R, 0));
-        n--;
+        else {
+          // pop_front or pop_back
+          operations.push_back(make_pair(mt()%2?POP_FRONT:POP_BACK, 0));
+          //operations.push_back(make_pair(POP_FRONT, 0));
+          operations.push_back(make_pair(CALCULATE_R, 0));
+          n--;
+        }
         break;
     }
   }
@@ -98,7 +100,7 @@ void internal_sequential_test(int T, int N, bool duplicate_test) {
   cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
   int seed = time(NULL);
   vector<double> A = generate_random_double_sequence(T, seed, duplicate_test);
-  CHECK(duplicate_test == contains_duplicates(A));
+  REQUIRE(duplicate_test == contains_duplicates(A));
   if (duplicate_test) cout << "testing with random arrays with duplicate values... seed=" << seed << "\n";
   else cout << "testing with random arrays without duplicate values... seed=" << seed << "\n";
   vector< pair<int, double> > operations;
@@ -161,7 +163,7 @@ void internal_test(vector< pair<int, double> > operations, bool verbose) {
               if (_ == 0 && repeat == 0) rs.push_back(r);
               else if (abs(r - rs[rs_counter]) > EPS) {
                 cout << "verify error: (out) r="<<rs[rs_counter]<<" != (correct) " << r << endl;
-                CHECK(abs(r - rs[rs_counter]) <= EPS);
+                REQUIRE(abs(r - rs[rs_counter]) <= EPS);
               }
               rs_counter++;
               /*
@@ -175,7 +177,7 @@ void internal_test(vector< pair<int, double> > operations, bool verbose) {
               break;
           }
         }
-        CHECK(sp->size() == 0);
+        REQUIRE(sp->size() == 0);
       }
       auto t2 = high_resolution_clock::now();
       duration<double, std::milli> ms_double = (t2 - t1)/LOOP;
@@ -212,13 +214,13 @@ void internal_test(vector< pair<int, double> > operations, bool verbose) {
               if (_ == 0 && repeat == 0) rs.push_back(r);
               else if (abs(r - rs[rs_counter]) > EPS) {
                 cout << "verify error: (out) r="<<rs[rs_counter]<<" != (correct) " << r << endl;
-                CHECK(abs(r - rs[rs_counter]) <= EPS);
+                REQUIRE(abs(r - rs[rs_counter]) <= EPS);
               }
               rs_counter++;
               break;
           }
         }
-        CHECK(kd->size() == 0);
+        REQUIRE(kd->size() == 0);
       }
       auto t2 = high_resolution_clock::now();
       duration<double, std::milli> ms_double = (t2 - t1)/LOOP;
