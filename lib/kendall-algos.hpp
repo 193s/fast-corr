@@ -1,6 +1,7 @@
 #pragma once
-#define kd_n2_type unsigned long long // data type used to store K,L,N*(N-1)/2 >= 0
-// under N <= 6074001000 (aprox. 6*10^9), d2_type won't exceed ULLONG_MAX=2^64-1
+#define kd_n2_type long long // data type used to store K,L,N*(N-1)/2 >= 0
+// under N <= 4294967296 (aprox. 4*10^9), kd_n2_type won't exceed LONG_MAX=2^63-1
+// also assuming maximum number of operations <= INT_MAX by "int id_for_tree"
 
 #include <vector>
 #include <deque>
@@ -58,9 +59,10 @@ double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
     int c = cur_set.size();
     n1 += (kd_n2_type)c*(c-1)/2;
   }
+  if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
   // return (double)(K-L) / (double)n0; // tau-a
   //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
-  return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
+  return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
   //int m = min(ctr_X.size(), ctr_Y.size());
   //return 2.0*(double)(K-L) / (N*N * (double)(m-1) / (double)m); // tau-c
 }
@@ -70,15 +72,15 @@ template< class T >
 double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
   int N = vals.size();
   if (N <= 1) return NAN;
-  int K = 0, L = 0;
-  int n0 = N*(N-1)/2;
+  kd_n2_type K = 0, L = 0;
+  kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
   std::map<T, int> ctr_X, ctr_Y;
   // O(NlogN)
   for (int i=0; i<N; i++) ctr_X[vals[i].first]++;
   for (int i=0; i<N; i++) ctr_Y[vals[i].second]++;
-  int n1 = 0, n2 = 0;
-  for (auto &p : ctr_X) n1 += p.second * (p.second-1) / 2;
-  for (auto &p : ctr_Y) n2 += p.second * (p.second-1) / 2;
+  kd_n2_type n1 = 0, n2 = 0;
+  for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
+  for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
   // O(N^2)
   for (int i=0; i<N; i++) {
     for (int j=0; j<i; j++) {
@@ -88,8 +90,9 @@ double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
       if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
     }
   }
+  if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
   // return (double)(K-L) / (double)n0; // tau-a
-  return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
+  return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
   //int m = min(ctr_X.size(), ctr_Y.size());
   //return 2.0*(double)(K-L) / (N*N * (double)(m-1) / (double)m); // tau-c
 }
@@ -114,9 +117,10 @@ class OnlineKendall : public OnlineKendallBase<T> {
 
   CountingTree ctr_tree;
   std::deque<std::pair<T, T> > vals;
-  std::map<T, int> ctr_X, ctr_Y;
+  std::map<T, int> ctr_X;
   int min_y_ctr = 0, max_y_ctr = 0;
   int id_for_tree = 0; // add unique id to allow for duplicate values in CountingTree
+                       // assuming maximum number of operations <= INT_MAX
   kd_n2_type K = 0, L = 0, n1 = 0;
   public:
     OnlineKendall() {}
@@ -165,8 +169,9 @@ class OnlineKendall : public OnlineKendallBase<T> {
     double kendall_tau() {
       int N = vals.size();
       kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
-      const int n2 = 0; // y should have no duplicate values
-      return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
+      // n2 = 0 because y_i has no duplicate values
+      if (n1 == n0) return NAN; // denominator will be 0 on tau-b/c
+      return (double)(K-L) / sqrt((double)(n0-n1)*(double)n0); // tau-b (n2=0)
     }
     int size() { return vals.size(); }
 };

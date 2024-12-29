@@ -89,7 +89,7 @@ TEST_CASE("check results with Python's scipy.stats") {
     int seed = time(NULL);
     MESSAGE("PYTHON_CMD=", python_cmd, ", seed=", seed);
 
-    SUBCASE("OnlineSpearman<T> vs scipy.stats.spearmanr (eps=1e-6)"){
+    SUBCASE("OnlineSpearman<T> vs scipy.stats.spearmanr (eps=1e-6)") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -105,7 +105,7 @@ TEST_CASE("check results with Python's scipy.stats") {
       }
     }
 
-    SUBCASE("OnlineKendall<T> vs scipy.stats.kendalltau (eps=1e-6)"){
+    SUBCASE("OnlineKendall<T> vs scipy.stats.kendalltau (eps=1e-6)") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -121,7 +121,7 @@ TEST_CASE("check results with Python's scipy.stats") {
       }
     }
 
-    SUBCASE("convert_array_to_rank vs scipy.stats.rankdata"){
+    SUBCASE("convert_array_to_rank vs scipy.stats.rankdata") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
