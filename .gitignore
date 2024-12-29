@@ -1,4 +1,5 @@
 *.out
+*.gch
 benchmark
 sample
 basic_tests

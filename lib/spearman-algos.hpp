@@ -8,6 +8,8 @@
 #include <deque>
 #include <stack>
 #include <map>
+#include <cmath>
+#include <algorithm>
 #include "lazy-reversible-rbst.hpp"
 
 // G++ extensions
@@ -18,35 +20,35 @@
 template< class T >
 class OnlineSpearmanBase {
   public:
-  virtual void push_back(T x_val);
-  virtual void push_front(T x_val);
-  virtual void pop_front();
-  virtual void pop_back();
-  virtual sp_d2_type spearman_d();
-  virtual int size();
-  double spearman_r() {
-    sp_d2_type d = spearman_d();
-    // d = sum((2d_i)^2) = 4*actual_D
-    int n = size();
-    //if (n <= 1) return NAN;
-    sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    //cout<<"n="<<n<<", d="<<d<<"/4, Sx="<<Sx<<"\n";
-    if (Sx == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Sx == 0) return 1.0 - 1.5*d / n3;
-    else {
-      // general formula:
-      // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
-      // when Sy = 0,
-      // = (1-(6.0/n3)*(D + Sx/12)) / (sqrt(1 - Sx/n3))
-      // = (n3-6.0*(D + Sx/12)) / sqrt(n3*n3 - Sx*n3)
-      // = (n3 - Sx/2.0 - 6.0*D) / sqrt(n3*n3 - Sx*n3)
-      // = (2*n3 - Sx - 3*(4D)) / (2*sqrt(n3*n3 - Sx*n3))
-      return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
+    virtual void push_back(T x_val) = 0;
+    virtual void push_front(T x_val) = 0;
+    virtual void pop_front() = 0;
+    virtual void pop_back() = 0;
+    virtual sp_d2_type spearman_d() = 0;
+    virtual int size() = 0;
+    double spearman_r() {
+      sp_d2_type d = spearman_d();
+      // d = sum((2d_i)^2) = 4*actual_D
+      int n = size();
+      //if (n <= 1) return NAN;
+      sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
+      //cout<<"n="<<n<<", d="<<d<<"/4, Sx="<<Sx<<"\n";
+      if (Sx == n3) return NAN; // rank X_i can not be defined in this case
+      else if (Sx == 0) return 1.0 - 1.5*d / n3;
+      else {
+        // general formula:
+        // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
+        // when Sy = 0,
+        // = (1-(6.0/n3)*(D + Sx/12)) / (sqrt(1 - Sx/n3))
+        // = (n3-6.0*(D + Sx/12)) / sqrt(n3*n3 - Sx*n3)
+        // = (n3 - Sx/2.0 - 6.0*D) / sqrt(n3*n3 - Sx*n3)
+        // = (2*n3 - Sx - 3*(4D)) / (2*sqrt(n3*n3 - Sx*n3))
+        return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
+      }
     }
-  }
   protected:
-  sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
-  // Sy = 0 under the sliding constraint
+    sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
+    // Sy = 0 under the sliding constraint
 };
 
 // multiply all ranks by 2 to treat them as integer

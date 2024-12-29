@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <deque>
+#include <cmath>
+#include <algorithm>
 
 #include "lazy-reversible-rbst.hpp"
 #include <ext/pb_ds/assoc_container.hpp>
@@ -101,12 +103,12 @@ double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
 template< class T >
 class OnlineKendallBase {
   public:
-  virtual void push_front(T x_val);
-  virtual void push_back(T x_val);
-  virtual void pop_front();
-  virtual void pop_back();
-  virtual double kendall_tau();
-  virtual int size();
+    virtual void push_front(T x_val) = 0;
+    virtual void push_back(T x_val) = 0;
+    virtual void pop_front() = 0;
+    virtual void pop_back() = 0;
+    virtual double kendall_tau() = 0;
+    virtual int size() = 0;
 };
 
 template< class T >
