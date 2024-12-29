@@ -115,83 +115,87 @@ class OnlineKendall : public OnlineKendallBase<T> {
   int K = 0, L = 0;
   int n1 = 0;
   public:
-  void push_back(T x_val) {
-    vals.push_back(make_pair(x_val, max_y_ctr++));
-    K += ctr_tree.order_of_key(make_pair(x_val, -1));
-    L += ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
-    ctr_tree.insert(make_pair(x_val, id_for_tree++));
-    n1 += ctr_X[x_val]++;
-  }
-  void pop_front() {
-    auto z = vals.front();
-    T x_val = z.first;
-    min_y_ctr++;
-    // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
-    vals.pop_front();
-    int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
-    ctr_tree.erase(ctr_tree.find_by_order(num_lower));
+    OnlineKendall() {}
+    OnlineKendall(vector<T> x_vals) {
+      for (auto &x : x_vals) push_back(x);
+    }
+    void push_back(T x_val) {
+      vals.push_back(make_pair(x_val, max_y_ctr++));
+      K += ctr_tree.order_of_key(make_pair(x_val, -1));
+      L += ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
+      ctr_tree.insert(make_pair(x_val, id_for_tree++));
+      n1 += ctr_X[x_val]++;
+    }
+    void pop_front() {
+      auto z = vals.front();
+      T x_val = z.first;
+      min_y_ctr++;
+      // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
+      vals.pop_front();
+      int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
+      ctr_tree.erase(ctr_tree.find_by_order(num_lower));
 
-    K -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
-    L -= num_lower;
-    n1 -= --ctr_X[x_val];
-  }
-  void push_front(T x_val) {
-    vals.push_front(make_pair(x_val, --min_y_ctr));
-    K += ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
-    L += ctr_tree.order_of_key(make_pair(x_val, -1));
-    ctr_tree.insert(make_pair(x_val, id_for_tree++));
-    n1 += ctr_X[x_val]++;
-  }
-  void pop_back() {
-    auto z = vals.back();
-    max_y_ctr--;
-    T x_val = z.first;
-    vals.pop_back();
-    int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
-    ctr_tree.erase(ctr_tree.find_by_order(num_lower));
+      K -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
+      L -= num_lower;
+      n1 -= --ctr_X[x_val];
+    }
+    void push_front(T x_val) {
+      vals.push_front(make_pair(x_val, --min_y_ctr));
+      K += ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
+      L += ctr_tree.order_of_key(make_pair(x_val, -1));
+      ctr_tree.insert(make_pair(x_val, id_for_tree++));
+      n1 += ctr_X[x_val]++;
+    }
+    void pop_back() {
+      auto z = vals.back();
+      max_y_ctr--;
+      T x_val = z.first;
+      vals.pop_back();
+      int num_lower = ctr_tree.order_of_key(make_pair(x_val, -1));
+      ctr_tree.erase(ctr_tree.find_by_order(num_lower));
 
-    K -= num_lower;
-    L -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
-    n1 -= --ctr_X[x_val];
-  }
-  double kendall_tau() {
-    int N = vals.size();
-    int n0 = N*(N-1)/2;
-    const int n2 = 0; // y should have no duplicate values
-    return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
-  }
-  int size() { return vals.size(); }
+      K -= num_lower;
+      L -= ctr_tree.size() - ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111));
+      n1 -= --ctr_X[x_val];
+    }
+    double kendall_tau() {
+      int N = vals.size();
+      int n0 = N*(N-1)/2;
+      const int n2 = 0; // y should have no duplicate values
+      return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
+    }
+    int size() { return vals.size(); }
 };
 
 template< class T >
 class OfflineKendall : public OnlineKendallBase<T> {
   int min_y_ctr = 0, max_y_ctr = 0;
   deque<pair<T, T> > vals;
-  //int N = 0;
 
   public:
-  void push_back(T x_val) {
-    vals.push_back(make_pair(x_val, max_y_ctr++));
-  }
-  void push_front(T x_val) {
-    vals.push_front(make_pair(x_val, --min_y_ctr));
-  }
-  void pop_front() {
-    // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
-    min_y_ctr++;
-    vals.pop_front();
-  }
-  void pop_back() {
-    max_y_ctr--;
-    vals.pop_back();
-  }
-  // O(NlogN) efficient offline algorithm (tau-b)
-  double kendall_tau() {
-    return offline_kendall_tau(vals);
-    //return offline_slow_kendall_tau<T>(vals);
-  }
-  int size() { return vals.size(); }
+    OfflineKendall() {}
+    OfflineKendall(vector<T> x_vals) {
+      for (auto &x : x_vals) push_back(x);
+    }
+    void push_back(T x_val) {
+      vals.push_back(make_pair(x_val, max_y_ctr++));
+    }
+    void push_front(T x_val) {
+      vals.push_front(make_pair(x_val, --min_y_ctr));
+    }
+    void pop_front() {
+      // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
+      min_y_ctr++;
+      vals.pop_front();
+    }
+    void pop_back() {
+      max_y_ctr--;
+      vals.pop_back();
+    }
+    // O(NlogN) efficient offline algorithm (tau-b)
+    double kendall_tau() {
+      return offline_kendall_tau(vals);
+      //return offline_slow_kendall_tau<T>(vals);
+    }
+    int size() { return vals.size(); }
 };
-
-//using CountingTree = __gnu_pbds::tree<pair<T, int> ,null_type,less<pair<T, int> >,rb_tree_tag,tree_order_statistics_node_update>;
-

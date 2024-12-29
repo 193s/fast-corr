@@ -16,7 +16,8 @@ Currently works only on g++ with -O1/O2/O3 options.
 - `void pop_back()`
 - `double spearman_r()`
 
-OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
+OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.  
+`T` can be `int`, `double`, ... or any other type with comparison operators defined.
 
 ### OnlineKendall\<T\>
 - `void push_front(T x_val)`
@@ -42,31 +43,45 @@ OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
 `g++-14 sample.cpp -O3`  
 ```c++
 #include <iostream>
-#include <vector>
-#include <limits>
 #include "lib/spearman-algos.hpp"
 #include "lib/kendall-algos.hpp"
 using namespace std;
 
 int main(int argc, char *argv[]) {
-  auto x = OnlineKendall<double>();
-  x.push_back(0);
-  x.push_back(1);
-  x.push_back(1);
-  x.push_back(2);
-  x.push_back(2);
-  x.push_back(1);
-  x.push_back(321);
-  cout << x.kendall_tau() << "\n";
-  auto y = OnlineSpearman<double>();
-  y.push_back(0);
-  y.push_back(1);
-  y.push_back(1);
-  y.push_back(2);
-  y.push_back(2);
-  y.push_back(1);
-  y.push_back(321);
-  cout << y.spearman_r() << "\n";
+  auto sp = OnlineSpearman<double>({0, 1, 1, 2, 2, 1});
+  sp.push_back(321);
+  cout<<"spearman([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = " << sp.spearman_r() << "\n";
+  sp.pop_front();
+  cout<<"spearman([1,1,2,2,1,321], [1,2,3,4,5,6]) = " << sp.spearman_r() << "\n";
+
+  auto kd = OnlineKendall<double>({0, 1, 1, 2, 2, 1});
+  kd.push_back(321);
+  cout<<"kendall([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = " << kd.kendall_tau() << "\n";
+  kd.pop_front();
+  cout<<"kendall([1,1,2,2,1,321], [1,2,3,4,5,6]) = " << kd.kendall_tau() << "\n";
   return 0;
 }
+```
+
+result:
+```
+spearman([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = 1.04414
+spearman([1,1,2,2,1,321], [1,2,3,4,5,6]) = 0.918643
+
+kendall([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = 0.688033
+kendall([1,1,2,2,1,321], [1,2,3,4,5,6]) = 0.544949
+```
+
+verify this with Python's `scipy.stats`:
+```python
+from scipy import stats
+>>> '%.6f' % stats.spearmanr([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]).statistic
+'0.767193'
+>>> '%.6f' % stats.spearmanr([1,1,2,2,1,321], [1,2,3,4,5,6]).statistic
+'0.617213'
+
+>>> '%.6f' % stats.kendalltau([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]).statistic
+'0.688033'
+>>> '%.6f' % stats.kendalltau([1,1,2,2,1,321], [1,2,3,4,5,6]).statistic
+'0.544949'
 ```

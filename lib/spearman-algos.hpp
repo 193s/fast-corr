@@ -153,7 +153,10 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
   public:
     deque<T> real_vals;
     RBTree::Node *root = tree.make_tree();
-    //OnlineSpearman() { }
+    OnlineSpearman() {}
+    OnlineSpearman(vector<T> x_vals) {
+      for (auto &x : x_vals) push_back(x);
+    }
 
     // add a new element
     void push_back(T x_val) {
@@ -246,6 +249,10 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
     return dup;
   }
   public:
+    OnlineSpearmanLinear() {}
+    OnlineSpearmanLinear(vector<T> x_vals) {
+      for (auto &x : x_vals) push_back(x);
+    }
     // add a new element
     void push_back(T x_val) {
       int dup = _add_value(x_val);
@@ -325,6 +332,10 @@ class OfflineSpearman : public OnlineSpearmanBase<T> {
     return dup;
   }
   public:
+    OfflineSpearman() {}
+    OfflineSpearman(vector<T> x_vals) {
+      for (auto &x : x_vals) push_back(x);
+    }
     // add a new element
     void push_back(T x_val) {
       _add_value(x_val);
