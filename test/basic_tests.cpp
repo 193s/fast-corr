@@ -167,31 +167,84 @@ TEST_CASE("testing helper functions") {
 TEST_CASE("spearman basic testing") {
   OnlineSpearmanBase<double> *sp;
 
-  for (int repeat=0; repeat<3; repeat++) {
-    if (repeat == 0) sp = new OnlineSpearman<double>();
-    else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
-    else sp = new OfflineSpearman<double>();
-
-    assert(isnan(sp->spearman_r())); // spearman({}) = nan
-    sp->push_back(0);
-    assert(isnan(sp->spearman_r())); // spearman({0}) = nan
-    sp->push_back(1);
-    assert(sp->spearman_r() == 1.0); // spearman({0, 1}) = 1
-
-    // spearman({0, 1, 2, ..., n}) = 1
-    for (int i=0; i<123; i++) {
-      sp->push_back(2+i);
-      if (sp->spearman_r() != 1.0) {
-        cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
-      }
-      assert(sp->spearman_r() == 1.0);
+  SUBCASE("<=2") {
+    for (int repeat=0; repeat<3; repeat++) {
+      if (repeat == 0) sp = new OnlineSpearman<double>();
+      else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
+      else sp = new OfflineSpearman<double>();
+      REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
+      sp->push_back(0);
+      REQUIRE(isnan(sp->spearman_r())); // spearman({0}) = nan
+      sp->push_back(0);
+      REQUIRE(isnan(sp->spearman_r())); // spearman({0, 0}) = nan
+      sp->push_back(0);
+      REQUIRE(isnan(sp->spearman_r())); // spearman({0, 0, 0}) = nan
     }
-    for (int i=0; i<123; i++) {
-      sp->pop_front();
-      if (sp->spearman_r() != 1.0) {
-        cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
+  }
+  SUBCASE("N=125") {
+    for (int repeat=0; repeat<3; repeat++) {
+      if (repeat == 0) sp = new OnlineSpearman<double>();
+      else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
+      else sp = new OfflineSpearman<double>();
+
+      REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
+      sp->push_back(0);
+      REQUIRE(isnan(sp->spearman_r())); // spearman({0}) = nan
+      sp->push_back(1);
+      REQUIRE(sp->spearman_r() == 1.0); // spearman({0, 1}) = 1
+
+      // spearman({0, 1, 2, ..., n}) = 1
+      for (int i=0; i<123; i++) {
+        sp->push_back(2+i);
+        if (sp->spearman_r() != 1.0) cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
+        REQUIRE(sp->spearman_r() == 1.0);
       }
-      assert(sp->spearman_r() == 1.0);
+      for (int i=0; i<123; i++) {
+        sp->pop_front();
+        if (sp->spearman_r() != 1.0) cout<<"n="<<sp->size()<<", spearman_r="<<sp->spearman_r() <<"\n";
+        REQUIRE(sp->spearman_r() == 1.0);
+      }
+    }
+  }
+}
+TEST_CASE("kendall basic testing") {
+  OnlineKendallBase<double> *kd;
+
+  SUBCASE("<=2") {
+    for (int repeat=0; repeat<3; repeat++) {
+      if (repeat == 0) kd = new OnlineKendall<double>();
+      else kd = new OfflineKendall<double>();
+      REQUIRE(isnan(kd->kendall_tau())); // spearman({}) = nan
+      kd->push_back(0);
+      REQUIRE(isnan(kd->kendall_tau())); // spearman({0}) = nan
+      kd->push_back(0);
+      REQUIRE(isnan(kd->kendall_tau())); // spearman({0, 0}) = nan
+      kd->push_back(0);
+      REQUIRE(isnan(kd->kendall_tau())); // spearman({0, 0, 0}) = nan
+    }
+  }
+  SUBCASE("N=125") {
+    for (int repeat=0; repeat<2; repeat++) {
+      if (repeat == 0) kd = new OnlineKendall<double>();
+      else kd = new OfflineKendall<double>();
+
+      REQUIRE(isnan(kd->kendall_tau())); // kendall({}) = nan
+      kd->push_back(0);
+      REQUIRE(isnan(kd->kendall_tau())); // kendall({0}) = nan
+      kd->push_back(1);
+      REQUIRE(kd->kendall_tau() == 1.0); // kendall({0, 1}) = 1
+
+      // spearman({0, 1, 2, ..., n}) = 1
+      for (int i=0; i<123; i++) {
+        kd->push_back(2+i);
+        if (kd->kendall_tau() != 1.0) cout<<"n="<<kd->size()<<", tau="<<kd->kendall_tau() <<"\n";
+        REQUIRE(kd->kendall_tau() == 1.0);
+      }
+      for (int i=0; i<123; i++) {
+        kd->pop_front();
+        if (kd->kendall_tau() != 1.0) cout<<"n="<<kd->size()<<", tau="<<kd->kendall_tau() <<"\n";
+        REQUIRE(kd->kendall_tau() == 1.0);
+      }
     }
   }
 }

@@ -1,9 +1,13 @@
 #pragma once
+#define d1_type long long // sum(d_i) can be negative for some intervals, and is at max N^2
+#define d2_type unsigned long long // sum(d_i^2) (>=0) can be as large as (N^3-N)/6 <=> rho=0
+// d2_type is used for Sx as well: Sx = sum(t_i^3 - t_i) (>=0) can be as large as N^3-N
+// under N <= 2642245, d2_type won't exceed ULLONG_MAX=2^64-1
+
 #include <vector>
 #include <deque>
 #include <stack>
 #include <map>
-
 #include "lazy-reversible-rbst.hpp"
 
 // G++ extensions
@@ -11,10 +15,6 @@
 #include <ext/pb_ds/tree_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
 
-// assuming N<INT_MAX
-#define d1_type long long // sum(d_i) can be as large as O(N^2)
-#define d2_type long long // sum(d_i^2) can be as large as (N^3-N)/6 <=> rho=0
-// Sx = sum(t_i^3 - t_i) can be as large as N^3-N so d2_type can be used as well
 
 const int TWO = 2; // multiply all ranks by 2 so that they can be treated as integer
 
@@ -31,7 +31,7 @@ class OnlineSpearmanBase {
     d2_type d = spearman_d();
     // d = sum((2d_i)^2) = 4*actual_D
     int n = size();
-    if (n == 1) return NAN;
+    //if (n <= 1) return NAN;
     d2_type n3 = (d2_type)n*((d2_type)n*n-1);
     //cout<<"n="<<n<<", d="<<d<<"/4, Sx="<<Sx<<"\n";
     if (Sx == 0) {
@@ -107,9 +107,7 @@ struct SNode {
     cnt = 1;
   }
   SNode(d1_type x1, d2_type x2, int c) {
-    d1 = x1;
-    d2 = x2;
-    cnt = c;
+    d1 = x1, d2 = x2, cnt = c;
   }
 };
 inline SNode F(SNode x, SNode y) {
@@ -263,7 +261,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
     void push_back(T x_val) {
       int dup = _add_value(x_val);
       int z = 0;
-      for (T x : X_val) if (x < x_val) z++;
+      for (T &x : X_val) if (x < x_val) z++;
       X_val.push_back(x_val);
       D.push_back(0);
       for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i] + 1*TWO; // [z+dup, N) += 1(*2)
@@ -274,7 +272,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
     void push_front(T x_val) {
       int dup = _add_value(x_val);
       int z = 0;
-      for (T x : X_val) if (x < x_val) z++;
+      for (T &x : X_val) if (x < x_val) z++;
       X_val.push_front(x_val);
       D.push_back(0);
       for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i];     // [z+dup, N) += 0 (*2) (x += 1, y += 1)
@@ -288,7 +286,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
       T x_val = X_val.front();
       int dup = _remove_value(x_val);
       int z = 0;
-      for (T x : X_val) if (x < x_val) z++;
+      for (T &x : X_val) if (x < x_val) z++;
       for (int i=0; i<z; i++)       D[i] += 1*TWO;     // [0, z) += 1 (*2)
       for (int i=z; i<z+dup; i++)   D[i] = D[i+1] + 1; // erase @z & [z, z+dup) += 0.5(*2)
       for (int i=z+dup; i<N-1; i++) D[i] = D[i+1];
@@ -300,7 +298,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
       T x_val = X_val.back();
       int dup = _remove_value(x_val);
       int z = 0;
-      for (T x : X_val) if (x < x_val) z++;
+      for (T &x : X_val) if (x < x_val) z++;
       //for (int i=0; i<z; i++) D[i] += 1*TWO; // [0, z) += 0-0 (*2)
       for (int i=z; i<z+dup; i++)   D[i] -= 1;             // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
       for (int i=z+dup; i<N-1; i++) D[i] = D[i+1] - 1*TWO; // erase@z+dup & [z+dup, ) -= 1(*2)

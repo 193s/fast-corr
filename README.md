@@ -88,3 +88,7 @@ from scipy import stats
 
 `PYTHON_CMD=python3 ./basic_tests` will automatically check the library's results with Python's `scipy.stats`. (adjust this to `PYTHON_CMD='pipenv run python' ./basic_tests` etc depending on your Python environment)
 
+### Assumptions
+`N<=2642245` for spearman and `N<=6074001000` for kendall is assumed during the calculation (`N` is the current number of pairs `(x,y)` in the structure at the time of each operation).  
+For larger `N`s, look for the first few lines in the .hpp file and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double or use any bigint implementation.  
+

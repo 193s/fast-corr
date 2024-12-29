@@ -1,4 +1,7 @@
 #pragma once
+#define kd_n2_type unsigned long long // data type used to store K,L,N*(N-1)/2 >= 0
+// under N <= 6074001000 (aprox. 6*10^9), d2_type won't exceed ULLONG_MAX=2^64-1
+
 #include <vector>
 #include <deque>
 
@@ -6,6 +9,7 @@
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
+
 // O(NlogN) efficient offline algorithm (tau-b)
 // TODO: pair<T, int>, iterator, ...
 template< class T >
@@ -14,22 +18,21 @@ double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
     std::pair<T, int>, __gnu_pbds::null_type, std::less<std::pair<T, int> >,
     __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update>;
   int N = vals.size();
-  int K = 0, L = 0;
-  int n0 = N*(N-1)/2;
+  if (N <= 1) return NAN;
+  kd_n2_type K = 0, L = 0, n0 = (kd_n2_type)N*(N-1)/2;
   std::vector< std::pair<T, T> > sorted;
-  for (auto p : vals) sorted.push_back(p);
+  for (auto &p : vals) sorted.push_back(p);
   // O(NlogN)
   std::sort(sorted.begin(), sorted.end());
-
 
   //std::map<T, int> ctr_X;
   std::map<T, int> ctr_Y;
   // O(NlogN)
   //for (int i=0; i<N; i++) ctr_X[sorted[i].second]++;
   for (int i=0; i<N; i++) ctr_Y[sorted[i].second]++;
-  int n1 = 0, n2 = 0;
-  //for (auto p : ctr_X) n1 += p.second * (p.second-1) / 2;
-  for (auto p : ctr_Y) n2 += p.second * (p.second-1) / 2;
+  kd_n2_type n1 = 0, n2 = 0;
+  //for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
+  for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
   // O(NlogN)
   std::vector<T> cur_set;
   CountingTree ctr_tree;
@@ -43,7 +46,7 @@ double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
     cur_set.push_back(yi);
     if (i+1 < N && sorted[i+1].first != xi) {
       int c = cur_set.size();
-      n1 += c*(c-1)/2;
+      n1 += (kd_n2_type)c*(c-1)/2;
       while (cur_set.size() > 0) {
         T y = cur_set.back();
         ctr_tree.insert(std::make_pair(y, id++)); // add y
@@ -53,7 +56,7 @@ double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
   }
   if (cur_set.size() > 0) {
     int c = cur_set.size();
-    n1 += c*(c-1)/2;
+    n1 += (kd_n2_type)c*(c-1)/2;
   }
   // return (double)(K-L) / (double)n0; // tau-a
   //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
@@ -66,6 +69,7 @@ double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
 template< class T >
 double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
   int N = vals.size();
+  if (N <= 1) return NAN;
   int K = 0, L = 0;
   int n0 = N*(N-1)/2;
   std::map<T, int> ctr_X, ctr_Y;
@@ -73,8 +77,8 @@ double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
   for (int i=0; i<N; i++) ctr_X[vals[i].first]++;
   for (int i=0; i<N; i++) ctr_Y[vals[i].second]++;
   int n1 = 0, n2 = 0;
-  for (auto p : ctr_X) n1 += p.second * (p.second-1) / 2;
-  for (auto p : ctr_Y) n2 += p.second * (p.second-1) / 2;
+  for (auto &p : ctr_X) n1 += p.second * (p.second-1) / 2;
+  for (auto &p : ctr_Y) n2 += p.second * (p.second-1) / 2;
   // O(N^2)
   for (int i=0; i<N; i++) {
     for (int j=0; j<i; j++) {
@@ -113,8 +117,7 @@ class OnlineKendall : public OnlineKendallBase<T> {
   std::map<T, int> ctr_X, ctr_Y;
   int min_y_ctr = 0, max_y_ctr = 0;
   int id_for_tree = 0; // add unique id to allow for duplicate values in CountingTree
-  int K = 0, L = 0;
-  int n1 = 0;
+  kd_n2_type K = 0, L = 0, n1 = 0;
   public:
     OnlineKendall() {}
     OnlineKendall(std::vector<T> x_vals) {
@@ -161,7 +164,7 @@ class OnlineKendall : public OnlineKendallBase<T> {
     }
     double kendall_tau() {
       int N = vals.size();
-      int n0 = N*(N-1)/2;
+      kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
       const int n2 = 0; // y should have no duplicate values
       return (double)(K-L) / sqrt((n0-n1)*(n0-n2)); // tau-b
     }
