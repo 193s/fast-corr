@@ -1,9 +1,8 @@
 #pragma once
 #include <vector>
 #include <deque>
-#include <set>
 #include <stack>
-using namespace std;
+#include <map>
 
 #include "lazy-reversible-rbst.hpp"
 
@@ -11,7 +10,6 @@ using namespace std;
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
-using namespace __gnu_pbds;
 
 // assuming N<INT_MAX
 #define d1_type long long // sum(d_i) can be as large as O(N^2)
@@ -59,19 +57,19 @@ class OnlineSpearmanBase {
 // e.g. [3, 12123, 0] -> [2, 3, 1]*2
 // e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
 template< class T >
-vector<int> convert_array_to_rank(vector<T> X) {
+std::vector<int> convert_array_to_rank(std::vector<T> X) {
   int n = X.size();
   if (n == 0) return {};
   if (n == 1) return {1*TWO};
   // n>=2
-  vector<pair<T, int> > X2(n);
-  for (int i=0; i<n; i++) X2[i] = pair<T, int>(X[i], i);
-  sort(X2.begin(), X2.end());
-  vector<int> ret(n);
+  std::vector<std::pair<T, int> > X2(n);
+  for (int i=0; i<n; i++) X2[i] = std::pair<T, int>(X[i], i);
+  std::sort(X2.begin(), X2.end());
+  std::vector<int> ret(n);
   //for (int i=0; i<n; i++) ret[X2[i].second] = TWO*(i+1); // works only on unique arrays
   int z = 0;
   T last_seen;
-  stack<int> st;
+  std::stack<int> st;
   for (int i=0; i<n; i++) {
     int pos = X2[i].second;
     if (i > 0 && last_seen != X2[i].first) {
@@ -135,33 +133,34 @@ template< class T >
 class OnlineSpearman : public OnlineSpearmanBase<T> {
   using RBTree = LazyReversibleRBST< SNode, int, F, addall, none_h, ts >;
   RBTree tree;
-  //using RBCountingTree = RBSTBase<T>;
-  using CountingTree = __gnu_pbds::tree<pair<T, int> ,null_type,less<pair<T, int> >,rb_tree_tag,tree_order_statistics_node_update>;
+  using CountingTree = __gnu_pbds::tree<
+    std::pair<T, int>, __gnu_pbds::null_type, std::less<std::pair<T, int> >,
+    __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update>;
   CountingTree ctr_tree;
   int N = 0;
   int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
-  inline pair<int, int> _add_value(T x_val) {
-    int z = ctr_tree.order_of_key(make_pair(x_val, -1)); // # of < x_val
-    int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z;
+  inline std::pair<int, int> _add_value(T x_val) {
+    int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
+    int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree+111)) - z;
     OnlineSpearmanBase<T>::Sx += (d2_type)3*dup*(dup+1);
-    ctr_tree.insert(make_pair(x_val, id_for_tree++));
-    return make_pair(z, dup);
+    ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
+    return std::make_pair(z, dup);
   }
-  inline pair<int, int> _remove_value(T x_val) {
-    int z = ctr_tree.order_of_key(make_pair(x_val, -1));
-    int dup = ctr_tree.order_of_key(make_pair(x_val, id_for_tree+111)) - z - 1;
+  inline std::pair<int, int> _remove_value(T x_val) {
+    int z = ctr_tree.order_of_key(std::make_pair(x_val, -1));
+    int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree+111)) - z - 1;
     ctr_tree.erase(ctr_tree.find_by_order(z)); // erase @z (@z+dup) will also work
-    // ctr_tree.erase(make_pair(x_val, <id to erase>));
+    // ctr_tree.erase(std::make_pair(x_val, <id to erase>));
     assert(dup >= 0);
     OnlineSpearmanBase<T>::Sx -= (d2_type)3*dup*(dup+1);
-    return make_pair(z, dup);
+    return std::make_pair(z, dup);
   }
 
   public:
-    deque<T> real_vals;
+    std::deque<T> real_vals;
     RBTree::Node *root = tree.make_tree();
     OnlineSpearman() {}
-    OnlineSpearman(vector<T> x_vals) {
+    OnlineSpearman(std::vector<T> x_vals) {
       for (auto &x : x_vals) push_back(x);
     }
 
@@ -239,9 +238,9 @@ class OnlineSpearman : public OnlineSpearmanBase<T> {
 template< class T >
 class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
   int N = 0;
-  vector<int> D;
-  deque<T> X_val;
-  map<T, int> duplicate_counter;
+  std::vector<int> D;
+  std::deque<T> X_val;
+  std::map<T, int> duplicate_counter;
   // internal function: returns the number of existing pairs with the same x-values (>=0)
   inline int _add_value(T x_val) {
     int dup = duplicate_counter[x_val]++;
@@ -257,7 +256,7 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
   }
   public:
     OnlineSpearmanLinear() {}
-    OnlineSpearmanLinear(vector<T> x_vals) {
+    OnlineSpearmanLinear(std::vector<T> x_vals) {
       for (auto &x : x_vals) push_back(x);
     }
     // add a new element
@@ -323,8 +322,8 @@ class OnlineSpearmanLinear : public OnlineSpearmanBase<T> {
 template< class T >
 class OfflineSpearman : public OnlineSpearmanBase<T> {
   int N = 0;
-  deque<T> X_val;
-  map<T, int> duplicate_counter;
+  std::deque<T> X_val;
+  std::map<T, int> duplicate_counter;
   // internal function: returns the number of existing pairs with the same x-values (>=0)
   inline int _add_value(T x_val) {
     int dup = duplicate_counter[x_val]++;
@@ -340,7 +339,7 @@ class OfflineSpearman : public OnlineSpearmanBase<T> {
   }
   public:
     OfflineSpearman() {}
-    OfflineSpearman(vector<T> x_vals) {
+    OfflineSpearman(std::vector<T> x_vals) {
       for (auto &x : x_vals) push_back(x);
     }
     // add a new element
@@ -372,10 +371,10 @@ class OfflineSpearman : public OnlineSpearmanBase<T> {
     d2_type spearman_d() {
       int n = X_val.size();
       // convert deque to vector
-      vector<T> X_val2;
-      for (T x : X_val) X_val2.push_back(x);
-      vector<int> X = convert_array_to_rank(X_val2);
-      vector<int> Y(n);
+      std::vector<T> X_val2;
+      for (T &x : X_val) X_val2.push_back(x);
+      std::vector<int> X = convert_array_to_rank(X_val2);
+      std::vector<int> Y(n);
       for (int i=1; i<=n; i++) Y[i-1] = i*TWO; // *2
       d2_type d = 0;
       for (int i=0; i<n; i++) d += (d2_type)(X[i]-Y[i])*(X[i]-Y[i]);

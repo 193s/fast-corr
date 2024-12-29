@@ -36,7 +36,7 @@ struct RBSTBase {
     }
   }
 
-  pair<Ptr, Ptr> split(Ptr t, int k) {
+  std::pair<Ptr, Ptr> split(Ptr t, int k) {
     if (!t) return {nullptr, nullptr};
     push(t);
     if (k <= count(t->l)) {
@@ -50,7 +50,7 @@ struct RBSTBase {
     }
   }
 
-  Ptr build(int l, int r, const vector<decltype(Node::key)> &v) {
+  Ptr build(int l, int r, const std::vector<decltype(Node::key)> &v) {
     if (l + 1 == r) return my_new(v[l]);
     int m = (l + r) >> 1;
     Ptr pm = my_new(v[m]);
@@ -59,7 +59,7 @@ struct RBSTBase {
     return update(pm);
   }
 
-  Ptr build(const vector<decltype(Node::key)> &v) {
+  Ptr build(const std::vector<decltype(Node::key)> &v) {
     return build(0, (int)v.size(), v);
   }
 
