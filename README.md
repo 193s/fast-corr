@@ -1,15 +1,20 @@
 # fast-corr
 [![C/C++ CI](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml)  
-Currently works only on g++.  
+Currently works only on g++ (to be fixed).  
 
-## APIs
-| Class | time complexity of each operation |
+## Installation
+`git clone https://github.com/193s/fast-corr/`
+
+## API
+### MonotonicOnlineCorr - Online correlation algorithms under partial monotonic constraints
+| Class name | Time complexity of each operation |
 | ---- | ---- |
-| FastCorr::MonotonicOnlineCorr::Spearman\<T\> | O(logN) |
-| FastCorr::MonotonicOnlineCorr::SpearmanLinear\<T\> | O(N) |
-| FastCorr::MonotonicOnlineCorr::OnlineKendall\<T\> | O(logN) |
+| FastCorr::MonotonicOnlineCorr::Spearman\<T\>       | O(logN) |
+| FastCorr::MonotonicOnlineCorr::SpearmanLinear\<T\> | O(N)    |
+| FastCorr::MonotonicOnlineCorr::Kendall\<T\>        | O(logN) |
 
-### FastCorr::MonotonicOnlineCorr::Spearman\<T\>
+Details and applications of the constraints are discussed in my paper yet to be published.
+#### FastCorr::MonotonicOnlineCorr::Spearman\<T\>
 - `void push_front(const T &x_val)`
 - `void push_back(const T &x_val)`
 - `void pop_front()`
@@ -19,7 +24,7 @@ Currently works only on g++.
 OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memory space.  
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.
 
-### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
+#### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
 - `void push_front(const T &x_val)`
 - `void push_back(const T &x_val)`
 - `void pop_front()`
@@ -28,8 +33,39 @@ OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memo
 
 `kendall_tau()` function returns tau-b (tau-c option will be added soon).
 
-## Installation
-`git clone https://github.com/193s/fast-corr/`
+----------------
+
+### OnlineCorr - Online correlation algorithms (no constraints)
+| Class name | Time complexity of each operation | Overall memory use |
+| ---- | ---- | ---- |
+| FastCorr::OnlineCorr::Pearson | O(1) | O(1) |
+<!--| FastCorr::OnlineCorr::Spearman\<T\> | O(logN) |
+| FastCorr::OnlineCorr::Kendall\<T\> | O(N) |-->
+
+#### FastCorr::OnlineCorr::Pearson
+Online algorithm works on O(1) time complexity on each query and uses O(1) memory space.  
+The result may contain errors incurred by arhithmetic operations of double datatype.  
+  - `void add(double x_val, double y_val)`
+  - `void remove(double x_val, double y_val)`
+  - `double pearson_r()` (alias: `double r()`)
+
+----------------
+
+### OfflineCorr - Offline implementations
+| Function name | Time complexity |
+| ---- | ---- |
+| FastCorr::OfflineCorr::spearman\_r\<T\>  | O(NlogN) |
+| FastCorr::OfflineCorr::kendall\_tau\<T\> | O(NlogN) |
+| FastCorr::OfflineCorr::pearson\_r        | O(N)     |
+
+This is nothing new, just a very straightforward set of implementations.  
+- `double FastCorr::OfflineCorr::spearman_r<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
+- `double FastCorr::OfflineCorr::kendall_tau<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
+- `double FastCorr::OfflineCorr::pearson_r(double x_vals, double y_vals)`
+
+----------------
+
+## Usage
 ### testing:
 `g++-14 test/basic_tests.cpp -O3`  
 
@@ -40,7 +76,7 @@ OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memo
 - `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000
 -->
 
-### running sample code:
+### running a sample code:
 `g++-14 sample.cpp -O3`  
 ```c++
 #include <iostream>
@@ -89,13 +125,7 @@ from scipy import stats
 
 `PYTHON_CMD=python3 ./basic_tests` will automatically check the library's results with Python's `scipy.stats`. (adjust this to `PYTHON_CMD='pipenv run python' ./basic_tests` etc depending on your Python environment)
 
-### Assumptions
+### Assumptions in MonotonicOnlineCorr
 `N<=2642245` for spearman and `N<=4294967296` for kendall is assumed during the calculation (`N` is the current number of pairs `(x,y)` in the structure at the time of each operation).  
 For larger `N`s, look for the first few lines of `lib/fast_corr_base.hpp` and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double, \_\_int128, etc.  
-
-### Offline implementations
-This is nothing new, just a very straightforward set of implementations. Time complexity is O(NlogN).
-- `double FastCorr::OfflineCorr::spearman_r<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
-- `double FastCorr::OfflineCorr::kendall_tau<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
-
 

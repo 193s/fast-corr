@@ -13,6 +13,7 @@ using namespace std;
 
 #include "../lib/spearman_algos.hpp"
 #include "../lib/kendall_algos.hpp"
+#include "../lib/pearson_algos.hpp"
 using namespace FastCorr;
 #define assertmsg(expr, msg) assert(((void)msg, expr))
 
@@ -26,6 +27,44 @@ TEST_CASE("test settings") {
 
 const double EPS = 1e-9;
 enum class OPERATION_TYPE { PUSH_FRONT, PUSH_BACK, POP_FRONT, POP_BACK, CALCULATE_R };
+
+TEST_CASE("OnlineCorr::Pearson basic testing") {
+  vector<double> xs, ys;
+  OnlineCorr::Pearson ps;
+  CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=0
+  ps.add(1, 4), xs.push_back(1), ys.push_back(4);
+  CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=1
+
+  // add(x, y)
+  ps.add(5, 3), xs.push_back(5), ys.push_back(3);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.add(1, 9), xs.push_back(1), ys.push_back(9);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.add(100, 2), xs.push_back(100), ys.push_back(2);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.add(1, 9), xs.push_back(1), ys.push_back(9);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.add(1, 9), xs.push_back(1), ys.push_back(9);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.add(-10, -10), xs.push_back(-10), ys.push_back(-10);
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+
+  // remove(x, y)
+  ps.remove(-10, -10), xs.pop_back(), ys.pop_back();
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.remove(1, 9), xs.pop_back(), ys.pop_back();
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.remove(1, 9), xs.pop_back(), ys.pop_back();
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.remove(100, 2), xs.pop_back(), ys.pop_back();
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+  ps.remove(1, 9), xs.pop_back(), ys.pop_back();
+  CHECK(abs( OfflineCorr::pearson_r(xs, ys) - ps.pearson_r()) < EPS);
+
+  ps.remove(5, 3), xs.pop_back(), ys.pop_back();
+  CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=1
+}
+
 
 // duplicate check in O(NlogN)
 template< class T >
