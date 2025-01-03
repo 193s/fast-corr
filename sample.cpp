@@ -1,7 +1,7 @@
 #include <iostream>
-#include "lib/spearman-algos.hpp"
-#include "lib/kendall-algos.hpp"
-using namespace std;
+#include "lib/spearman_algos.hpp"
+#include "lib/kendall_algos.hpp"
+using std::cout;
 
 int main(int argc, char *argv[]) {
   auto sp = FastCorr::MonotonicOnlineCorr::Spearman<double>({0, 1, 1, 2, 2, 1});

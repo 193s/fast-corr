@@ -11,20 +11,14 @@
 #include <cassert>
 using namespace std;
 
-#include "../lib/spearman-algos.hpp"
-#include "../lib/kendall-algos.hpp"
+#include "../lib/spearman_algos.hpp"
+#include "../lib/kendall_algos.hpp"
 using namespace FastCorr;
 #define assertmsg(expr, msg) assert(((void)msg, expr))
 
 const int LOOP = 3;
 const double EPS = 1e-9;
-enum class OPERATION_TYPE {
-  PUSH_FRONT,
-  PUSH_BACK,
-  POP_FRONT,
-  POP_BACK,
-  CALCULATE_R,
-};
+enum class OPERATION_TYPE { PUSH_FRONT, PUSH_BACK, POP_FRONT, POP_BACK, CALCULATE_R };
 
 // duplicate check in O(NlogN)
 template< class T >
@@ -106,7 +100,7 @@ TEST_CASE("check results with Python's scipy.stats") {
       }
     }
 
-    SUBCASE("MonotonicOnlineCor::Kendall<T> vs scipy.stats.kendalltau (eps=1e-6)") {
+    SUBCASE("MonotonicOnlineCorr::Kendall<T> vs scipy.stats.kendalltau (eps=1e-6)") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -271,17 +265,17 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
     auto t1 = high_resolution_clock::now();
     if (repeat == 0) {
       // O(logN) efficient algorithm
-      if (verbose) cout << "[OnlineSpearman] O(logN)\n";
+      if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(logN)\n";
       sp = new MonotonicOnlineCorr::Spearman<double>();
     }
     else if (repeat == 1) {
       // O(N) insert sort implementation
-      if (verbose) cout << "[OnlineSpearmanLinear] O(N)\n";
+      if (verbose) cout << "[MonotonicOnlineCorr::SpearmanLinear] O(N)\n";
       sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
     }
     else {
       // O(NlogN) straight forward implementation
-      if (verbose) cout << "[OfflineSpearman] O(NlogN)\n";
+      if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(NlogN)\n";
       sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
     }
     for (int _=0; _<LOOP; _++) {
@@ -332,12 +326,12 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
     auto t1 = high_resolution_clock::now();
     if (repeat == 0) {
       // O(logN) efficient algorithm
-      if (verbose) cout << "[OnlineKendall] O(logN)\n";
+      if (verbose) cout << "[MonotonicOnlineCorr::Kendall] O(logN)\n";
       kd = new MonotonicOnlineCorr::Kendall<double>();
     }
     else {
       // O(NlogN) offline implementation
-      if (verbose) cout << "[OfflineKendall] O(NlogN)\n";
+      if (verbose) cout << "[MonotonicOnlineCorr::OfflineKendall] O(NlogN)\n";
       kd = new MonotonicOnlineCorr::OfflineKendall<double>();
     }
     for (int _=0; _<LOOP; _++) {

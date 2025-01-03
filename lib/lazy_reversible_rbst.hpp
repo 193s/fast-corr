@@ -1,5 +1,5 @@
 #pragma once
-#include "rbst-base.hpp"
+#include "rbst_base.hpp"
 
 namespace FastCorr {
   template <typename T, typename E>

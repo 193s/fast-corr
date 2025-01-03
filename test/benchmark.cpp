@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../lib/doctest.h"
-#include "../lib/spearman-algos.hpp"
-#include "../lib/kendall-algos.hpp"
+#include "../lib/spearman_algos.hpp"
+#include "../lib/kendall_algos.hpp"
 #include "basic_tests.cpp"
 #include <iostream>
 #include <vector>

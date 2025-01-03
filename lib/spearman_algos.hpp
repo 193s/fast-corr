@@ -1,30 +1,22 @@
 #pragma once
-#define sp_d1_type long long // sum(d_i) can be negative for some intervals, and is at max N^2
-#define sp_d2_type unsigned long long // sum(d_i^2) (>=0) can be as large as (N^3-N)/6 <=> rho=0
-// d2_type is used for Sx as well: Sx = sum(t_i^3 - t_i) (>=0) can be as large as N^3-N
-// under N <= 2642245, d2_type won't exceed ULLONG_MAX=2^64-1
-
 #include <vector>
 #include <deque>
 #include <stack>
 #include <map>
 #include <cmath>
 #include <algorithm>
-#include "fast-corr-base.hpp"
-#include "lazy-reversible-rbst.hpp"
+#include "fast_corr_base.hpp"
+#include "lazy_reversible_rbst.hpp"
 
 namespace FastCorr::MonotonicOnlineCorr {
+  // Internal node class defined for Spearman algorithm
+  // < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
   struct SNode {
     sp_d1_type d1;
     sp_d2_type d2;
     int cnt;
-    SNode() {
-      d1 = d2 = 0;
-      cnt = 1;
-    }
-    SNode(sp_d1_type x1, sp_d2_type x2, int c) {
-      d1 = x1, d2 = x2, cnt = c;
-    }
+    SNode() { d1 = d2 = 0, cnt = 1; }
+    SNode(sp_d1_type x1, sp_d2_type x2, int c) { d1 = x1, d2 = x2, cnt = c; }
   };
   inline SNode F(SNode x, SNode y) {
     return SNode(x.d1 + y.d1, x.d2 + y.d2, x.cnt + y.cnt);
@@ -39,12 +31,11 @@ namespace FastCorr::MonotonicOnlineCorr {
   inline int none_h(int x, int y) { return x+y; }
   inline SNode ts(SNode a) { return a; }
 
-  //< class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
-
   // Efficient Online Implementation of Spearman's rank correlation with Binary Search Tree
   // adding/removing a value requires O(logN) time complexity and O(N) space complexity
   template< class T >
   class Spearman : public SpearmanBase<T> {
+
     using RBTree = LazyReversibleRBST< SNode, int, F, addall, none_h, ts >;
     RBTree tree;
     CountingTree< std::pair<T, int> > ctr_tree;
@@ -52,14 +43,14 @@ namespace FastCorr::MonotonicOnlineCorr {
     int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
     inline std::pair<int, int> _add_value(T x_val) {
       int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
-      int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree+111)) - z;
+      int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z;
       SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
       ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
       return std::make_pair(z, dup);
     }
     inline std::pair<int, int> _remove_value(T x_val) {
       int z = ctr_tree.order_of_key(std::make_pair(x_val, -1));
-      int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree+111)) - z - 1;
+      int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z - 1;
       ctr_tree.erase_kth(z); // erase @z (@z+dup) will also work
       // ctr_tree.erase(std::make_pair(x_val, <id to erase>));
       assert(dup >= 0);
