@@ -1,5 +1,5 @@
 # fast-corr
-[![C/C++ CI](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml)  
+[![C/C++ CI](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml)  
 Currently works only on g++.  
 
 ## APIs

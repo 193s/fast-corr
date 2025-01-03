@@ -36,7 +36,6 @@ namespace FastCorr::MonotonicOnlineCorr {
    */
   template< class T >
   class Spearman : public SpearmanBase<T> {
-
     using RBTree = LazyReversibleRBST< SNode, int, F, addall, none_h, ts >;
     RBTree tree;
     CountingTree< std::pair<T, int> > ctr_tree;
@@ -130,11 +129,11 @@ namespace FastCorr::MonotonicOnlineCorr {
         if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*2); // [z+dup, )  -= 1(*2)
         N -= 1;
       }
-      sp_d2_type spearman_d() {
+      sp_d2_type spearman_d() const {
         if (root == NULL) return 0;
         return root->sum.d2;
       }
-      int size() { return N; }
+      size_t size() const { return N; }
   };
   /**
    * Online Implementation of Spearman's rank correlation without Binary Search Tree
@@ -212,12 +211,12 @@ namespace FastCorr::MonotonicOnlineCorr {
         X_val.pop_back();
         D.pop_back();
       }
-      sp_d2_type spearman_d() {
+      sp_d2_type spearman_d() const {
         sp_d2_type d = 0;
         for (int i=0; i<N; i++) d += (sp_d2_type)D[i]*D[i];
         return d;
       }
-      int size() { return N; }
+      size_t size() const { return N; }
   };
 
 
@@ -274,18 +273,16 @@ namespace FastCorr::MonotonicOnlineCorr {
         N -= 1;
         X_val.pop_back();
       }
-      sp_d2_type spearman_d() {
+      sp_d2_type spearman_d() const {
         int n = X_val.size();
         // convert deque to vector
-        std::vector<T> X_val2;
-        for (T &x : X_val) X_val2.push_back(x);
-        std::vector<int> X = convert_array_to_rank(X_val2);
+        std::vector<int> X = convert_array_to_rank(std::vector(X_val.begin(), X_val.end()));
         std::vector<int> Y(n);
         for (int i=1; i<=n; i++) Y[i-1] = i*2; // *2
         sp_d2_type d = 0;
         for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
         return d;
       }
-      int size() { return N; }
+      size_t size() const { return N; }
   };
 }

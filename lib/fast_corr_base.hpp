@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <deque>
-#include <stack>
 #include <algorithm>
 #include <cmath>
 // CountingTree<T> is currently dependent on G++ extensions
@@ -36,9 +35,9 @@ namespace FastCorr {
         virtual void push_back(const T &x_val) = 0;
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
-        virtual double kendall_tau() = 0;
-        virtual int size() = 0;
-        double r() { return kendall_tau(); } // r() is an alias for kendall_tau()
+        virtual double kendall_tau() const = 0;
+        virtual size_t size() const = 0;
+        double r() const { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
     template< class T >
@@ -48,9 +47,9 @@ namespace FastCorr {
         virtual void push_front(const T &x_val) = 0;
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
-        virtual sp_d2_type spearman_d() = 0;
-        virtual int size() = 0;
-        double spearman_r() {
+        virtual sp_d2_type spearman_d() const = 0;
+        virtual size_t size() const = 0;
+        double spearman_r() const {
           sp_d2_type d = spearman_d();
           // d = sum((2d_i)^2) = 4*actual_D
           int n = size();
@@ -86,8 +85,8 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual double r() = 0;
-        virtual int size() = 0;
+        virtual double r() const = 0;
+        virtual size_t size() const = 0;
     };
 
     template< class TX, class TY >
@@ -95,8 +94,8 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual double r() = 0;
-        virtual int size() = 0;
+        virtual double r() const = 0;
+        virtual size_t size() const = 0;
     };
 
     template< class TX, class TY >
@@ -104,8 +103,8 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual double r() = 0;
-        virtual int size() = 0;
+        virtual double r() const = 0;
+        virtual size_t size() const = 0;
     };
   }
 
@@ -122,13 +121,13 @@ namespace FastCorr {
       void insert(const T &val) {
         gpp_tree.insert(val);
       }
-      int order_of_key(const T &val) {
+      int order_of_key(const T &val) const {
         return gpp_tree.order_of_key(val);
       }
       void erase_kth(const int &z) {
         gpp_tree.erase(gpp_tree.find_by_order(z));
       }
-      int size() {
+      size_t size() const {
         return gpp_tree.size();
       }
   };
@@ -150,32 +149,18 @@ namespace FastCorr {
     std::sort(X2.begin(), X2.end());
     std::vector<int> ret(n);
     //for (int i=0; i<n; i++) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
-    int z = 0;
-    T last_seen;
-    std::stack<int> st;
-    for (int i=0; i<n; i++) {
-      int pos = X2[i].second;
-      if (i > 0 && last_seen != X2[i].first) {
+    int z = 0, head = 0;
+    for (int i=1; i<n; i++) {
+      if (X2[i-1].first != X2[i].first) {
         // finalize rank
-        int rank = z*2 + 1 + st.size();// 1 + z + (st.size()-1)/2
-        z += st.size();
-        while (!st.empty()) {
-          ret[st.top()] = rank;
-          st.pop();
-        }
-      }
-      st.push(pos);
-      last_seen = X2[i].first;
-    }
-    if (!st.empty()) {
-      // finalize rank
-      int rank = z*2 + 1 + st.size();// 1 + z + (st.size()-1)/2
-      z += st.size();
-      while (!st.empty()) {
-        ret[st.top()] = rank;
-        st.pop();
+        int rank = z*2 + 1 + (i-head); // 1 + z + (number of same values - 1)/2
+        z += i-head;
+        for (; head<i; head++) ret[X2[head].second] = rank;
       }
     }
+    // finalize rank
+    int rank = z*2 + 1 + (n-head); // 1 + z + (number of same values - 1)/2
+    for (; head<n; head++) ret[X2[head].second] = rank;
     //cout<<"{";for (T x:X)cout<<x<<",";cout<<"} -> ";
     //cout<<"{";for (int x:ret)cout<<x/2.0<<",";cout<<"}\n";
     return ret;
@@ -201,31 +186,27 @@ namespace FastCorr {
     kd_n2_type n1 = 0, n2 = 0;
     //for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
-    // O(NlogN)
-    std::stack<T> cur_set;
+    // the second int is an unique id to allow for duplicate values in tree
     CountingTree< std::pair<T, int> > ctr_tree;
-    int id = 0; // add unique id to allow for duplicate values in tree
+    int head = 0;
     for (int i=0; i<N; i++) {
-      T xi = sorted[i].first, yi = sorted[i].second;
+      if (i > 0 && sorted[i-1].first != sorted[i].first) {
+        int c = i-head;
+        n1 += (kd_n2_type)c*(c-1)/2;
+        for (; head<i; head++) {
+          ctr_tree.insert(std::make_pair(sorted[head].second, head)); // add y
+        }
+        // head = i
+      }
       // K += #{yj < yi}
       // L += #{yj > yi}
-      K += ctr_tree.order_of_key(std::make_pair(yi, -1));
-      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, N)); // assuming id < N
-      cur_set.push(yi);
-      if (i+1 < N && sorted[i+1].first != xi) {
-        int c = cur_set.size();
-        n1 += (kd_n2_type)c*(c-1)/2;
-        while (cur_set.size() > 0) {
-          T y = cur_set.top();
-          ctr_tree.insert(std::make_pair(y, id++)); // add y
-          cur_set.pop();
-        }
-      }
+      T yi = sorted[i].second;
+      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logN)
+      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, N)); // O(logN)
     }
-    if (cur_set.size() > 0) {
-      int c = cur_set.size();
-      n1 += (kd_n2_type)c*(c-1)/2;
-    }
+    int last_c = N-head;
+    n1 += (kd_n2_type)last_c*(last_c-1)/2;
+
     if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
     // return (double)(K-L) / (double)n0; // tau-a
     //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";

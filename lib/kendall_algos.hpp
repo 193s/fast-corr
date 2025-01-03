@@ -60,14 +60,14 @@ namespace FastCorr::MonotonicOnlineCorr {
         L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
         n1 -= --ctr_X[x_val];
       }
-      double kendall_tau() {
+      double kendall_tau() const {
         int N = vals.size();
         kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
         // n2 = 0 because y_i has no duplicate values
         if (n1 == n0) return NAN; // denominator will be 0 on tau-b/c
         return (double)(K-L) / sqrt((double)(n0-n1)*(double)n0); // tau-b (n2=0)
       }
-      int size() { return vals.size(); }
+      size_t size() const { return vals.size(); }
   };
 
   template< class T >
@@ -96,10 +96,10 @@ namespace FastCorr::MonotonicOnlineCorr {
         vals.pop_back();
       }
       // O(NlogN) efficient offline algorithm (tau-b)
-      double kendall_tau() {
+      double kendall_tau() const {
         return offline_kendall_tau(vals);
         //return offline_slow_kendall_tau<T>(vals);
       }
-      int size() { return vals.size(); }
+      size_t size() const { return vals.size(); }
   };
 }
