@@ -1,6 +1,6 @@
 GPP ?= g++-14
 all: ./basic_tests ./benchmark ./sample
-LIB=lib/spearman-algos.hpp lib/kendall-algos.hpp
+LIB=lib/fast-corr-base.hpp lib/spearman-algos.hpp lib/kendall-algos.hpp
 
 ./basic_tests: $(LIB) test/basic_tests.cpp
 	$(GPP) test/basic_tests.cpp -O3 -o basic_tests

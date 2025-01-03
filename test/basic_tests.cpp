@@ -13,6 +13,7 @@ using namespace std;
 
 #include "../lib/spearman-algos.hpp"
 #include "../lib/kendall-algos.hpp"
+using namespace FastCorr;
 #define assertmsg(expr, msg) assert(((void)msg, expr))
 
 const int LOOP = 3;
@@ -89,7 +90,7 @@ TEST_CASE("check results with Python's scipy.stats") {
     int seed = time(NULL);
     MESSAGE("PYTHON_CMD=", python_cmd, ", seed=", seed);
 
-    SUBCASE("OnlineSpearman<T> vs scipy.stats.spearmanr (eps=1e-6)") {
+    SUBCASE("MonotonicOnlineCorr::Spearman<T> vs scipy.stats.spearmanr (eps=1e-6)") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -98,14 +99,14 @@ TEST_CASE("check results with Python's scipy.stats") {
         int n = 15;
         vector<int> xs = generate_random_int_sequence(n, seed, duplicate_test);
         MESSAGE("testing spearman with ", internal_stringify(xs), "...");
-        double r = OnlineSpearman<int>(xs).spearman_r();
+        double r = MonotonicOnlineCorr::Spearman<int>(xs).spearman_r();
         CHECK(0 == system_exec(python_cmd
             + " -c 'import scipy.stats; assert(1e-6 >= abs("+to_string(r)+"-"
             + "scipy.stats.spearmanr("+internal_stringify(xs)+",range("+to_string(n)+")).statistic))'"));
       }
     }
 
-    SUBCASE("OnlineKendall<T> vs scipy.stats.kendalltau (eps=1e-6)") {
+    SUBCASE("MonotonicOnlineCor::Kendall<T> vs scipy.stats.kendalltau (eps=1e-6)") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -114,7 +115,7 @@ TEST_CASE("check results with Python's scipy.stats") {
         int n = 15;
         vector<int> xs = generate_random_int_sequence(n, seed, true);
         MESSAGE("testing kendall with ", internal_stringify(xs), "...");
-        double r = OnlineKendall<int>(xs).kendall_tau();
+        double r = MonotonicOnlineCorr::Kendall<int>(xs).kendall_tau();
         CHECK(0 == system_exec(python_cmd
             + " -c 'import scipy.stats; assert(1e-6 >= abs("+to_string(r)+"-"
             + "scipy.stats.kendalltau("+internal_stringify(xs)+",range("+to_string(n)+")).statistic))'"));
@@ -165,13 +166,13 @@ TEST_CASE("testing helper functions") {
 }
 
 TEST_CASE("spearman basic testing") {
-  OnlineSpearmanBase<double> *sp;
+  MonotonicOnlineCorr::SpearmanBase<double> *sp;
 
   SUBCASE("<=2") {
     for (int repeat=0; repeat<3; repeat++) {
-      if (repeat == 0) sp = new OnlineSpearman<double>();
-      else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
-      else sp = new OfflineSpearman<double>();
+      if (repeat == 0) sp = new MonotonicOnlineCorr::Spearman<double>();
+      else if (repeat == 1) sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
+      else sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
       REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
       sp->push_back(0);
       REQUIRE(isnan(sp->spearman_r())); // spearman({0}) = nan
@@ -183,9 +184,9 @@ TEST_CASE("spearman basic testing") {
   }
   SUBCASE("N=125") {
     for (int repeat=0; repeat<3; repeat++) {
-      if (repeat == 0) sp = new OnlineSpearman<double>();
-      else if (repeat == 1) sp = new OnlineSpearmanLinear<double>();
-      else sp = new OfflineSpearman<double>();
+      if (repeat == 0) sp = new MonotonicOnlineCorr::Spearman<double>();
+      else if (repeat == 1) sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
+      else sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
 
       REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
       sp->push_back(0);
@@ -208,12 +209,12 @@ TEST_CASE("spearman basic testing") {
   }
 }
 TEST_CASE("kendall basic testing") {
-  OnlineKendallBase<double> *kd;
+  MonotonicOnlineCorr::KendallBase<double> *kd;
 
   SUBCASE("<=2") {
     for (int repeat=0; repeat<3; repeat++) {
-      if (repeat == 0) kd = new OnlineKendall<double>();
-      else kd = new OfflineKendall<double>();
+      if (repeat == 0) kd = new MonotonicOnlineCorr::Kendall<double>();
+      else kd = new MonotonicOnlineCorr::OfflineKendall<double>();
       REQUIRE(isnan(kd->kendall_tau())); // spearman({}) = nan
       kd->push_back(0);
       REQUIRE(isnan(kd->kendall_tau())); // spearman({0}) = nan
@@ -225,8 +226,8 @@ TEST_CASE("kendall basic testing") {
   }
   SUBCASE("N=125") {
     for (int repeat=0; repeat<2; repeat++) {
-      if (repeat == 0) kd = new OnlineKendall<double>();
-      else kd = new OfflineKendall<double>();
+      if (repeat == 0) kd = new MonotonicOnlineCorr::Kendall<double>();
+      else kd = new MonotonicOnlineCorr::OfflineKendall<double>();
 
       REQUIRE(isnan(kd->kendall_tau())); // kendall({}) = nan
       kd->push_back(0);
@@ -260,9 +261,9 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
   using std::chrono::milliseconds;
 
   if (verbose) cout << "========= SPEARMAN =========\n";
-  OnlineSpearmanBase<double> *sp;
-  //imp_list.push_back(*(new OnlineSpearman<double>()));
-  //  new OnlineSpearmanLinear<double>(), new OfflineSpearman<double>(), };
+  MonotonicOnlineCorr::SpearmanBase<double> *sp;
+  //imp_list.push_back(*(new MonotonicOnlineCorr::Spearman<double>()));
+  //  new MonotonicOnlineCorr::SpearmanLinear<double>(), new OfflineSpearman<double>(), };
 
   //vector<long long> ds;
   vector<double> rs;
@@ -271,18 +272,17 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
     if (repeat == 0) {
       // O(logN) efficient algorithm
       if (verbose) cout << "[OnlineSpearman] O(logN)\n";
-      sp = new OnlineSpearman<double>();
-      //sp = new OnlineSpearmanLinear<double>();
+      sp = new MonotonicOnlineCorr::Spearman<double>();
     }
     else if (repeat == 1) {
       // O(N) insert sort implementation
       if (verbose) cout << "[OnlineSpearmanLinear] O(N)\n";
-      sp = new OnlineSpearmanLinear<double>();
+      sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
     }
     else {
       // O(NlogN) straight forward implementation
       if (verbose) cout << "[OfflineSpearman] O(NlogN)\n";
-      sp = new OfflineSpearman<double>();
+      sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
     }
     for (int _=0; _<LOOP; _++) {
       int rs_counter = 0;
@@ -326,19 +326,19 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
   using std::chrono::duration;
   using std::chrono::milliseconds;
   if (verbose) cout << "========= KENDALL =========\n";
-  OnlineKendallBase<double> *kd;
+  MonotonicOnlineCorr::KendallBase<double> *kd;
   vector<double> rs;
   for (int repeat=0; repeat<2; repeat++) {
     auto t1 = high_resolution_clock::now();
     if (repeat == 0) {
       // O(logN) efficient algorithm
       if (verbose) cout << "[OnlineKendall] O(logN)\n";
-      kd = new OnlineKendall<double>();
+      kd = new MonotonicOnlineCorr::Kendall<double>();
     }
     else {
       // O(NlogN) offline implementation
       if (verbose) cout << "[OfflineKendall] O(NlogN)\n";
-      kd = new OfflineKendall<double>();
+      kd = new MonotonicOnlineCorr::OfflineKendall<double>();
     }
     for (int _=0; _<LOOP; _++) {
       int rs_counter = 0;

@@ -5,11 +5,11 @@ Currently works only on g++.
 ## APIs
 | Class | time complexity of each operation |
 | ---- | ---- |
-| OnlineSpearman | O(logN) |
-| OnlineSpearmanLinear | O(N) |
-| OnlineKendall | O(logN) |
+| FastCorr::MonotonicOnlineCorr::Spearman\<T\> | O(logN) |
+| FastCorr::MonotonicOnlineCorr::SpearmanLinear\<T\> | O(N) |
+| FastCorr::MonotonicOnlineCorr::OnlineKendall\<T\> | O(logN) |
 
-### OnlineSpearman\<T\>
+### FastCorr::MonotonicOnlineCorr::Spearman\<T\>
 - `void push_front(T x_val)`
 - `void push_back(T x_val)`
 - `void pop_front()`
@@ -19,7 +19,7 @@ Currently works only on g++.
 OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.  
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.
 
-### OnlineKendall\<T\>
+### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
 - `void push_front(T x_val)`
 - `void push_back(T x_val)`
 - `void pop_front()`
@@ -48,13 +48,13 @@ OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
 using namespace std;
 
 int main(int argc, char *argv[]) {
-  auto sp = OnlineSpearman<double>({0, 1, 1, 2, 2, 1});
+  auto sp = FastCorr::MonotonicOnlineCorr::Spearman<double>({0, 1, 1, 2, 2, 1});
   sp.push_back(321);
   cout << "spearman([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = " << sp.spearman_r() << "\n";
   sp.pop_front();
   cout << "spearman([1,1,2,2,1,321], [1,2,3,4,5,6]) = " << sp.spearman_r() << "\n";
 
-  auto kd = OnlineKendall<double>({0, 1, 1, 2, 2, 1});
+  auto kd = FastCorr::MonotonicOnlineCorr::Kendall<double>({0, 1, 1, 2, 2, 1});
   kd.push_back(321);
   cout << "kendall([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = " << kd.kendall_tau() << "\n";
   kd.pop_front();
