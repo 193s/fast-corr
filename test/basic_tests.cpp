@@ -97,7 +97,7 @@ TEST_CASE("check results with Python's scipy.stats") {
 
       for (int loop=0; loop<5; loop++) {
         int n = 15;
-        vector<int> xs = generate_random_int_sequence(n, seed, duplicate_test);
+        vector<int> xs = generate_random_int_sequence(n, seed+loop, duplicate_test);
         MESSAGE("testing spearman with ", internal_stringify(xs), "...");
         double r = MonotonicOnlineCorr::Spearman<int>(xs).spearman_r();
         CHECK(0 == system_exec(python_cmd
@@ -113,7 +113,7 @@ TEST_CASE("check results with Python's scipy.stats") {
 
       for (int loop=0; loop<5; loop++) {
         int n = 15;
-        vector<int> xs = generate_random_int_sequence(n, seed, true);
+        vector<int> xs = generate_random_int_sequence(n, seed+loop, duplicate_test);
         MESSAGE("testing kendall with ", internal_stringify(xs), "...");
         double r = MonotonicOnlineCorr::Kendall<int>(xs).kendall_tau();
         CHECK(0 == system_exec(python_cmd
@@ -129,7 +129,7 @@ TEST_CASE("check results with Python's scipy.stats") {
 
       for (int loop=0; loop<3; loop++) {
         int n = 10;
-        vector<int> xs = generate_random_int_sequence(n, seed, duplicate_test);
+        vector<int> xs = generate_random_int_sequence(n, seed+loop, duplicate_test);
         vector<int> ys = convert_array_to_rank(xs);
         MESSAGE("testing rankdata with ", internal_stringify(xs), "...");
         CHECK(0 == system_exec(python_cmd
