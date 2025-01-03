@@ -18,10 +18,10 @@ namespace FastCorr::MonotonicOnlineCorr {
     kd_n2_type K = 0, L = 0, n1 = 0;
     public:
       Kendall() {}
-      Kendall(std::vector<T> x_vals) {
+      Kendall(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
-      void push_back(T x_val) {
+      void push_back(const T &x_val) {
         vals.push_back(std::make_pair(x_val, max_y_ctr++));
         K += ctr_tree.order_of_key(std::make_pair(x_val, -1));
         L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
@@ -41,7 +41,7 @@ namespace FastCorr::MonotonicOnlineCorr {
         L -= num_lower;
         n1 -= --ctr_X[x_val];
       }
-      void push_front(T x_val) {
+      void push_front(const T &x_val) {
         vals.push_front(std::make_pair(x_val, --min_y_ctr));
         K += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
         L += ctr_tree.order_of_key(std::make_pair(x_val, -1));
@@ -77,13 +77,13 @@ namespace FastCorr::MonotonicOnlineCorr {
 
     public:
       OfflineKendall() {}
-      OfflineKendall(std::vector<T> x_vals) {
+      OfflineKendall(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
-      void push_back(T x_val) {
+      void push_back(const T &x_val) {
         vals.push_back(std::make_pair(x_val, max_y_ctr++));
       }
-      void push_front(T x_val) {
+      void push_front(const T &x_val) {
         vals.push_front(std::make_pair(x_val, --min_y_ctr));
       }
       void pop_front() {

@@ -42,14 +42,14 @@ namespace FastCorr::MonotonicOnlineCorr {
     CountingTree< std::pair<T, int> > ctr_tree;
     int N = 0;
     int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
-    inline std::pair<int, int> _add_value(T x_val) {
+    inline std::pair<int, int> _add_value(const T &x_val) {
       int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
       int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z;
       SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
       ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
       return std::make_pair(z, dup);
     }
-    inline std::pair<int, int> _remove_value(T x_val) {
+    inline std::pair<int, int> _remove_value(const T &x_val) {
       int z = ctr_tree.order_of_key(std::make_pair(x_val, -1));
       int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z - 1;
       ctr_tree.erase_kth(z); // erase @z (@z+dup) will also work
@@ -63,12 +63,12 @@ namespace FastCorr::MonotonicOnlineCorr {
       std::deque<T> real_vals;
       RBTree::Node *root = tree.make_tree();
       Spearman() {}
-      Spearman(std::vector<T> x_vals) {
+      Spearman(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
 
       // add a new element
-      void push_back(T x_val) {
+      void push_back(const T &x_val) {
         real_vals.push_back(x_val);
         auto p = _add_value(x_val);
         int z = p.first, dup = p.second;
@@ -88,7 +88,7 @@ namespace FastCorr::MonotonicOnlineCorr {
         N += 1;
       }
       // add a new element
-      void push_front(T x_val) {
+      void push_front(const T &x_val) {
         real_vals.push_front(x_val);
         auto p = _add_value(x_val);
         int z = p.first, dup = p.second;
@@ -147,13 +147,13 @@ namespace FastCorr::MonotonicOnlineCorr {
     std::deque<T> X_val;
     std::map<T, int> duplicate_counter;
     // internal function: returns the number of existing pairs with the same x-values (>=0)
-    inline int _add_value(T x_val) {
+    inline int _add_value(const T &x_val) {
       int dup = duplicate_counter[x_val]++;
       SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
-    inline int _remove_value(T x_val) {
+    inline int _remove_value(const T &x_val) {
       int dup = --duplicate_counter[x_val]; //assert dup>=0
       if (dup == 0) duplicate_counter.erase(x_val);
       SpearmanBase<T>::Sx -= (sp_d2_type)3*dup*(dup+1);
@@ -161,11 +161,11 @@ namespace FastCorr::MonotonicOnlineCorr {
     }
     public:
       SpearmanLinear() {}
-      SpearmanLinear(std::vector<T> x_vals) {
+      SpearmanLinear(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
       // add a new element
-      void push_back(T x_val) {
+      void push_back(const T &x_val) {
         int dup = _add_value(x_val);
         int z = 0;
         for (T &x : X_val) if (x < x_val) z++;
@@ -176,7 +176,7 @@ namespace FastCorr::MonotonicOnlineCorr {
         D[z+dup] = (z - N)*2 + dup; // D_i := X_i - Y_i (*2)
         N += 1;
       }
-      void push_front(T x_val) {
+      void push_front(const T &x_val) {
         int dup = _add_value(x_val);
         int z = 0;
         for (T &x : X_val) if (x < x_val) z++;
@@ -231,13 +231,13 @@ namespace FastCorr::MonotonicOnlineCorr {
     std::deque<T> X_val;
     std::map<T, int> duplicate_counter;
     // internal function: returns the number of existing pairs with the same x-values (>=0)
-    inline int _add_value(T x_val) {
+    inline int _add_value(const T &x_val) {
       int dup = duplicate_counter[x_val]++;
       SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
-    inline int _remove_value(T x_val) {
+    inline int _remove_value(const T &x_val) {
       int dup = --duplicate_counter[x_val]; //assert dup>=0
       if (dup == 0) duplicate_counter.erase(x_val);
       SpearmanBase<T>::Sx -= (sp_d2_type)3*dup*(dup+1);
@@ -245,17 +245,17 @@ namespace FastCorr::MonotonicOnlineCorr {
     }
     public:
       OfflineSpearman() {}
-      OfflineSpearman(std::vector<T> x_vals) {
+      OfflineSpearman(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
       // add a new element
-      void push_back(T x_val) {
+      void push_back(const T &x_val) {
         _add_value(x_val);
         N += 1;
         X_val.push_back(x_val);
       }
       // add a new element
-      void push_front(T x_val) {
+      void push_front(const T &x_val) {
         _add_value(x_val);
         N += 1;
         X_val.push_front(x_val);

@@ -10,8 +10,8 @@ Currently works only on g++.
 | FastCorr::MonotonicOnlineCorr::OnlineKendall\<T\> | O(logN) |
 
 ### FastCorr::MonotonicOnlineCorr::Spearman\<T\>
-- `void push_front(T x_val)`
-- `void push_back(T x_val)`
+- `void push_front(const T &x_val)`
+- `void push_back(const T &x_val)`
 - `void pop_front()`
 - `void pop_back()`
 - `double spearman_r()` (alias: `double r()`)
@@ -20,8 +20,8 @@ OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.
 
 ### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
-- `void push_front(T x_val)`
-- `void push_back(T x_val)`
+- `void push_front(const T &x_val)`
+- `void push_back(const T &x_val)`
 - `void pop_front()`
 - `void pop_back()`
 - `double kendall_tau()` (alias: `double r()`)  

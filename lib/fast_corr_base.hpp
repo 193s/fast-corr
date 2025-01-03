@@ -22,6 +22,8 @@ namespace FastCorr {
   typedef long long kd_n2_type; // data type used to store K,L,N*(N-1)/2 >= 0
     // under N <= 4294967296 (aprox. 4*10^9), kd_n2_type won't exceed LONG_MAX=2^63-1
     // also assuming maximum number of operations <= INT_MAX by "int id_for_tree"
+  // typedef long corr_result_type; // type used for correlation coefficients ([-1, 1] or NAN)
+  //                                // options are: double, float, ...
 
   /**
    * @brief A module for online correlation algorithms on partial monotonicity constraints
@@ -30,8 +32,8 @@ namespace FastCorr {
     template< class T >
     class KendallBase {
       public:
-        virtual void push_front(T x_val) = 0;
-        virtual void push_back(T x_val) = 0;
+        virtual void push_front(const T &x_val) = 0;
+        virtual void push_back(const T &x_val) = 0;
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
         virtual double kendall_tau() = 0;
@@ -42,8 +44,8 @@ namespace FastCorr {
     template< class T >
     class SpearmanBase {
       public:
-        virtual void push_back(T x_val) = 0;
-        virtual void push_front(T x_val) = 0;
+        virtual void push_back(const T &x_val) = 0;
+        virtual void push_front(const T &x_val) = 0;
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
         virtual sp_d2_type spearman_d() = 0;
@@ -82,8 +84,8 @@ namespace FastCorr {
     template< class TX, class TY >
     class Base {
       public:
-        virtual void add(TX x_val, TY y_val) = 0;
-        virtual void remove(TX x_val, TY y_val) = 0;
+        virtual void add(const TX &x_val, const TY &y_val) = 0;
+        virtual void remove(const TX &x_val, const TY &y_val) = 0;
         virtual double r() = 0;
         virtual int size() = 0;
     };
@@ -91,8 +93,8 @@ namespace FastCorr {
     template< class TX, class TY >
     class Pearson : public Base<TX, TY> {
       public:
-        virtual void add(TX x_val, TY y_val) = 0;
-        virtual void remove(TX x_val, TY y_val) = 0;
+        virtual void add(const TX &x_val, const TY &y_val) = 0;
+        virtual void remove(const TX &x_val, const TY &y_val) = 0;
         virtual double r() = 0;
         virtual int size() = 0;
     };
@@ -100,8 +102,8 @@ namespace FastCorr {
     template< class TX, class TY >
     class Kendall : public Base<TX, TY> {
       public:
-        virtual void add(TX x_val, TY y_val) = 0;
-        virtual void remove(TX x_val, TY y_val) = 0;
+        virtual void add(const TX &x_val, const TY &y_val) = 0;
+        virtual void remove(const TX &x_val, const TY &y_val) = 0;
         virtual double r() = 0;
         virtual int size() = 0;
     };
@@ -117,13 +119,13 @@ namespace FastCorr {
     GPPTree gpp_tree;
 
     public:
-      void insert(T val) {
+      void insert(const T &val) {
         gpp_tree.insert(val);
       }
-      int order_of_key(T val) {
+      int order_of_key(const T &val) {
         return gpp_tree.order_of_key(val);
       }
-      void erase_kth(int z) {
+      void erase_kth(const int &z) {
         gpp_tree.erase(gpp_tree.find_by_order(z));
       }
       int size() {
@@ -138,7 +140,7 @@ namespace FastCorr {
    * e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
    */
   template< class T >
-  std::vector<int> convert_array_to_rank(std::vector<T> X) {
+  std::vector<int> convert_array_to_rank(const std::vector<T> &X) {
     int n = X.size();
     if (n == 0) return {};
     if (n == 1) return {2};
@@ -182,7 +184,7 @@ namespace FastCorr {
   // O(NlogN) efficient offline algorithm (tau-b)
   // TODO: pair<T, int>, iterator, ...
   template< class T >
-  double offline_kendall_tau(std::deque< std::pair<T, T> > &vals) {
+  double offline_kendall_tau(const std::deque< std::pair<T, T> > &vals) {
     int N = vals.size();
     if (N <= 1) return NAN;
     kd_n2_type K = 0, L = 0, n0 = (kd_n2_type)N*(N-1)/2;
@@ -234,7 +236,7 @@ namespace FastCorr {
 
   // O(N^2) implementation for validation (tau-b)
   template< class T >
-  double offline_slow_kendall_tau(std::deque<std::pair<T, T> > vals) {
+  double offline_slow_kendall_tau(const std::deque<std::pair<T, T> > &vals) {
     int N = vals.size();
     if (N <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
@@ -264,7 +266,7 @@ namespace FastCorr {
   /**
    * straightforward pearson implementation: O(N) time complexity
    */
-  double straightforward_pearson_r(std::vector<double> X, std::vector<double> Y) {
+  double straightforward_pearson_r(const std::vector<double> &X, const std::vector<double> &Y) {
     assert(X.size() == Y.size());
     int n = X.size();
     double sum_X = 0, sum_Y = 0, sum_XY = 0;
