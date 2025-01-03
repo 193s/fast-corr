@@ -1,12 +1,31 @@
 #pragma once
+#include <cassert>
 #include <vector>
 #include <deque>
-#include <cmath>
 #include <map>
 #include <algorithm>
+#include <cmath>
 #include "fast_corr_base.hpp"
 
+namespace FastCorr::OfflineCorr {
+  // O(NlogN) efficient offline algorithm (tau-b)
+  template< class T >
+  double kendall_tau(const std::vector< std::pair<T, T> > &vals);
+  // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
+  template< class T >
+  double kendall_tau(const std::deque< std::pair<T, T> > &vals);
+}
+
+// ===== Online Algorithms ========================================================== //
+
 namespace FastCorr::MonotonicOnlineCorr {
+  template< class T >
+  class KendallBase : public Base<T> {
+    public:
+      virtual double kendall_tau() const = 0;
+      double r() const { return kendall_tau(); } // r() is an alias for kendall_tau()
+  };
+
   template< class T >
   class Kendall : public KendallBase<T> {
     CountingTree< std::pair<T, int> > ctr_tree;
@@ -97,14 +116,25 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       // O(NlogN) efficient offline algorithm (tau-b)
       double kendall_tau() const {
-        return OfflineCorr::kendall_tau(vals);
+        return FastCorr::OfflineCorr::kendall_tau(vals);
         //return OfflineCorr::slow_kendall_tau<T>(vals);
       }
       size_t size() const { return vals.size(); }
   };
 }
+namespace FastCorr::OnlineCorr {
+  // TODO
+  template< class TX, class TY >
+  class Kendall : public Base<TX, TY> {
+    public:
+      virtual void add(const TX &x_val, const TY &y_val) = 0;
+      virtual void remove(const TX &x_val, const TY &y_val) = 0;
+      virtual double r() const = 0;
+      virtual size_t size() const = 0;
+  };
+}
 
-// ===== Offline ==================================================================== //
+// ===== Offline Algorithms ========================================================= //
 
 namespace FastCorr::OfflineCorr {
   // internal function
@@ -142,7 +172,6 @@ namespace FastCorr::OfflineCorr {
     if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
-
 
     std::map<T, int> ctr_Y;
     // O(nlogn)

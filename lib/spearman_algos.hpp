@@ -1,9 +1,21 @@
 #pragma once
+#include <cassert>
 #include <vector>
 #include <deque>
 #include <map>
+#include <algorithm>
+#include <cmath>
 #include "fast_corr_base.hpp"
 #include "lazy_rbst.hpp"
+
+namespace FastCorr::OfflineCorr {
+  // O(NlogN) offline algorithm (spearman-r)
+  template< class T >
+  double spearman_r(const std::vector< std::pair<T, T> > &vals);
+  template< class T >
+  double spearman_r(const std::vector<T> &x_vals, const std::vector<T> &y_vals);
+}
+// ===== Helper functions =========================================================== //
 
 namespace FastCorr {
   double spearman_r_from_n_4d_Sx_and_Sy(int n, sp_d2_type d, sp_d2_type Sx, sp_d2_type Sy) {
@@ -34,9 +46,57 @@ namespace FastCorr {
       return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
     }
   }
+
+  /**
+   * returns the ranks of given vector of any type
+   * ranks are multiplied by 2 so that all ranks will be integers
+   * e.g. [3, 12123, 0] -> [2, 3, 1]*2
+   * e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
+   * time complexity: O(NlogN)
+   */
+  template< class T >
+  std::vector<int> convert_array_to_rank(const std::vector<T> &X) {
+    int n = X.size();
+    if (n == 0) return {};
+    if (n == 1) return {2};
+    // n>=2
+    std::vector<std::pair<T, int> > X2(n);
+    for (int i=0; i<n; i++) X2[i] = std::pair<T, int>(X[i], i);
+    std::sort(X2.begin(), X2.end()); // O(nlogn)
+    std::vector<int> ret(n);
+    //for (int i=0; i<n; i++) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
+    int z = 0, head = 0;
+    for (int i=1; i<n; i++) {
+      if (X2[i-1].first != X2[i].first) {
+        // finalize rank
+        int rank = z*2 + 1 + (i-head); // 1 + z + (number of same values - 1)/2
+        z += i-head;
+        for (; head<i; head++) ret[X2[head].second] = rank;
+      }
+    }
+    int last_rank = z*2 + 1 + (n-head); // 1 + z + (number of same values - 1)/2
+    for (; head<n; head++) ret[X2[head].second] = last_rank;
+    return ret;
+  }
 }
 
+// ===== Online Algorithms ========================================================== //
+
 namespace FastCorr::MonotonicOnlineCorr {
+  template< class T >
+  class SpearmanBase : public Base<T> {
+    public:
+      virtual sp_d2_type spearman_d() const = 0;
+      virtual size_t size() const = 0;
+      double spearman_r() const {
+        sp_d2_type d = spearman_d(); // d = sum[i=1..n]((2d_i)^2) = 4*actual_D
+        return FastCorr::spearman_r_from_n_4d_and_Sx(size(), d, Sx);
+      }
+      double r() const { return spearman_r(); } // r() is an alias for spearman_r()
+    protected:
+      sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
+      // Sy = 0 under monotonic constraints
+  };
   //  < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
 
   /**
@@ -294,7 +354,7 @@ namespace FastCorr::MonotonicOnlineCorr {
   };
 }
 
-// ===== Offline ==================================================================== //
+// ===== Offline Algorithms ========================================================= //
 
 namespace FastCorr::OfflineCorr {
   // O(NlogN) spearman algorithm
