@@ -2,6 +2,7 @@
 #include <vector>
 #include <deque>
 #include <cmath>
+#include <map>
 #include <algorithm>
 #include "fast_corr_base.hpp"
 #include "lazy_reversible_rbst.hpp"
@@ -97,9 +98,114 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       // O(NlogN) efficient offline algorithm (tau-b)
       double kendall_tau() const {
-        return offline_kendall_tau(vals);
-        //return offline_slow_kendall_tau<T>(vals);
+        return OfflineCorr::kendall_tau(vals);
+        //return OfflineCorr::slow_kendall_tau<T>(vals);
       }
       size_t size() const { return vals.size(); }
   };
+}
+
+// ===== Offline ==================================================================== //
+
+namespace FastCorr::OfflineCorr {
+  // internal function
+  template< class T >
+  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted);
+
+  // O(NlogN) efficient offline algorithm (tau-b)
+  template< class T >
+  double kendall_tau(const std::vector< std::pair<T, T> > &vals) {
+    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+    return internal_kendall_tau_on_sorted_pairs<T>(sorted);
+  }
+  // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
+  template< class T >
+  double kendall_tau(const std::deque< std::pair<T, T> > &vals) {
+    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+    return internal_kendall_tau_on_sorted_pairs<T>(sorted);
+  }
+  // wrapper for two vectors
+  template< class T >
+  double kendall_tau(const std::vector<T> &x_vals, const std::vector<T> &y_vals) {
+    assert(x_vals.size() == y_vals.size());
+    int n = x_vals.size();
+    std::vector<std::pair<T, T> > vals;
+    for (int i=0; i<n; i++) vals.push_back(std::make_pair(x_vals[i], y_vals[i]));
+    return kendall_tau(vals);
+  }
+
+  // internal function
+  template< class T >
+  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted) {
+    int n = sorted.size();
+    if (n <= 1) return NAN;
+    kd_n2_type K = 0, L = 0;
+    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+
+
+    std::map<T, int> ctr_Y;
+    // O(nlogn)
+    for (int i=0; i<n; i++) ctr_Y[sorted[i].second]++;
+    kd_n2_type n1 = 0, n2 = 0;
+    for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
+    // the second int is an unique id to allow for duplicate values in tree
+    CountingTree< std::pair<T, int> > ctr_tree;
+    int head = 0;
+    for (int i=0; i<n; i++) {
+      if (i > 0 && sorted[i-1].first != sorted[i].first) {
+        int c = i-head;
+        n1 += (kd_n2_type)c*(c-1)/2;
+        for (; head<i; head++) {
+          ctr_tree.insert(std::make_pair(sorted[head].second, head)); // add y
+        }
+        // head = i
+      }
+      // K += #{yj < yi}
+      // L += #{yj > yi}
+      T yi = sorted[i].second;
+      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logn)
+      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, n)); // O(logn)
+    }
+    int last_c = n-head;
+    n1 += (kd_n2_type)last_c*(last_c-1)/2;
+
+    if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
+    // return (double)(K-L) / (double)n0; // tau-a
+    //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
+    return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
+    //int m = min(ctr_X.size(), ctr_Y.size());
+    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
+  }
+
+  // O(N^2) implementation for validation (tau-b)
+  template< class T >
+  double slow_kendall_tau(const std::deque<std::pair<T, T> > &vals) {
+    int n = vals.size();
+    if (n <= 1) return NAN;
+    kd_n2_type K = 0, L = 0;
+    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+    std::map<T, int> ctr_X, ctr_Y;
+    // O(nlogn)
+    for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
+    for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
+    kd_n2_type n1 = 0, n2 = 0;
+    for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
+    for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
+    // O(N^2)
+    for (int i=0; i<n; i++) {
+      for (int j=0; j<i; j++) {
+        T xi = vals[i].first,  xj = vals[j].first;
+        T yi = vals[i].second, yj = vals[j].second;
+        if ((xi < xj && yi < yj) || (xi > xj && yi > yj)) K++;
+        if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
+      }
+    }
+    if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
+    // return (double)(K-L) / (double)n0; // tau-a
+    return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
+    //int m = min(ctr_X.size(), ctr_Y.size());
+    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
+  }
 }

@@ -16,7 +16,7 @@ Currently works only on g++.
 - `void pop_back()`
 - `double spearman_r()` (alias: `double r()`)
 
-OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.  
+OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memory space.  
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.
 
 ### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
@@ -92,3 +92,10 @@ from scipy import stats
 ### Assumptions
 `N<=2642245` for spearman and `N<=4294967296` for kendall is assumed during the calculation (`N` is the current number of pairs `(x,y)` in the structure at the time of each operation).  
 For larger `N`s, look for the first few lines of `lib/fast_corr_base.hpp` and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double, \_\_int128, etc.  
+
+### Offline implementations
+This is nothing new, just a very straightforward set of implementations. Time complexity is O(NlogN).
+- `double FastCorr::OfflineCorr::spearman_r<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
+- `double FastCorr::OfflineCorr::kendall_tau<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
+
+

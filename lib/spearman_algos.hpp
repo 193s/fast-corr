@@ -5,6 +5,37 @@
 #include "fast_corr_base.hpp"
 #include "lazy_reversible_rbst.hpp"
 
+namespace FastCorr {
+  double spearman_r_from_n_4d_Sx_and_Sy(int n, sp_d2_type d, sp_d2_type Sx, sp_d2_type Sy) {
+    //if (n <= 1) return NAN;
+    sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
+    if (Sx == n3 || Sy == n3) return NAN; // rank X_i can not be defined in this case
+    else if (Sx == 0 && Sy == 0) return 1.0 - 1.5*d / n3;
+    else {
+      // general formula:
+      // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
+      // = (2-(1/n3)*(12*D + Sx + Sy)) / (2*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
+      // = (2-(1/n3)*(3*(4D) + Sx + Sy)) / (2*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
+      // = (2*n3 - 3*(4D) - Sx - Sy) / (2*n3*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
+      return (2.0*n3 - Sx - Sy - 3.0*d) /
+        (2.0 * n3 * sqrt(1.0-(double)Sx/(double)n3) * sqrt(1.0-(double)Sy/(double)n3));
+    }
+  }
+  // special case when Sy = 0
+  double spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx) {
+    //if (n <= 1) return NAN;
+    sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
+    if (Sx == n3) return NAN; // rank X_i can not be defined in this case
+    else if (Sx == 0) return 1.0 - 1.5*d / n3;
+    else {
+      // when Sy = 0,
+      // = (2*n3 - 3*(4D) - Sx - Sy) / (2*n3*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
+      // = (2*n3 - 3*(4D) - Sx) / (2*n3*(sqrt(1 - Sx/n3))
+      return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
+    }
+  }
+}
+
 namespace FastCorr::MonotonicOnlineCorr {
   /**
    * Internal node class defined for Spearman algorithm
@@ -275,7 +306,6 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       sp_d2_type spearman_d() const {
         int n = X_val.size();
-        // convert deque to vector
         std::vector<int> X = convert_array_to_rank(std::vector<T>(X_val.begin(), X_val.end()));
         std::vector<int> Y(n);
         for (int i=0; i<n; i++) Y[i] = (i+1)*2; // *2
@@ -285,4 +315,41 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       size_t size() const { return N; }
   };
+}
+
+// ===== Offline ==================================================================== //
+
+namespace FastCorr::OfflineCorr {
+  // O(NlogN) spearman algorithm
+  template< class T >
+  double spearman_r(const std::vector<T> &x_vals, const std::vector<T> &y_vals) {
+    int n = x_vals.size();
+    // calculate ranks and 4d
+    std::vector<int> X = convert_array_to_rank(x_vals);
+    std::vector<int> Y = convert_array_to_rank(y_vals);
+    sp_d2_type d = 0;
+    for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
+
+    // calculate Sx and Sy
+    std::map<T, int> X_ctr, Y_ctr;
+    sp_d2_type Sx = 0, Sy = 0;
+    for (auto &x : x_vals) {
+      int dup = X_ctr[x]++;
+      Sx += (sp_d2_type)3*dup*(dup+1);
+    }
+    for (auto &y : y_vals) {
+      int dup = Y_ctr[y]++;
+      Sy += (sp_d2_type)3*dup*(dup+1);
+    }
+    return spearman_r_from_n_4d_Sx_and_Sy(n, d, Sx, Sy);
+  }
+  template< class T >
+  double spearman_r(const std::vector< std::pair<T, T> > &vals) {
+    int n = vals.size();
+
+    std::vector<int> x_vals(n), y_vals(n);
+    for (int i=0; i<n; i++) x_vals[i] = vals[i].first;
+    for (int i=0; i<n; i++) y_vals[i] = vals[i].second;
+    return spearman_r(x_vals, y_vals);
+  }
 }

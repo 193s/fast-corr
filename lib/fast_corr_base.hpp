@@ -24,6 +24,7 @@ namespace FastCorr {
   // typedef long corr_result_type; // type used for correlation coefficients ([-1, 1] or NAN)
   //                                // options are: double, float, ...
 
+  double spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx);
   /**
    * @brief A module for online correlation algorithms on partial monotonicity constraints
    */
@@ -53,21 +54,7 @@ namespace FastCorr {
           sp_d2_type d = spearman_d();
           // d = sum((2d_i)^2) = 4*actual_D
           int n = size();
-          //if (n <= 1) return NAN;
-          sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-          //cout<<"n="<<n<<", d="<<d<<"/4, Sx="<<Sx<<"\n";
-          if (Sx == n3) return NAN; // rank X_i can not be defined in this case
-          else if (Sx == 0) return 1.0 - 1.5*d / n3;
-          else {
-            // general formula:
-            // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
-            // when Sy = 0,
-            // = (1-(6.0/n3)*(D + Sx/12)) / (sqrt(1 - Sx/n3))
-            // = (n3-6.0*(D + Sx/12)) / sqrt(n3*n3 - Sx*n3)
-            // = (n3 - Sx/2.0 - 6.0*D) / sqrt(n3*n3 - Sx*n3)
-            // = (2*n3 - Sx - 3*(4D)) / (2*sqrt(n3*n3 - Sx*n3))
-            return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
-          }
+          return spearman_r_from_n_4d_and_Sx(n, d, Sx);
         }
         double r() { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
@@ -164,114 +151,38 @@ namespace FastCorr {
     return ret;
   }
 
-  // internal function
-  template< class T >
-  double internal_offline_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted);
+  namespace OfflineCorr {
+    // O(NlogN) offline algorithm (spearman-r)
+    template< class T >
+    double spearman_r(const std::vector< std::pair<T, T> > &vals);
+    template< class T >
+    double spearman_r(const std::vector<T> &x_vals, const std::vector<T> &y_vals);
 
-  // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
-  template< class T >
-  inline double offline_kendall_tau(const std::deque< std::pair<T, T> > &vals) {
-    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
-    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
-    return internal_offline_kendall_tau_on_sorted_pairs<T>(sorted);
-  }
-  // O(NlogN) efficient offline algorithm (tau-b): wrapper for vector
-  template< class T >
-  inline double offline_kendall_tau(const std::vector< std::pair<T, T> > &vals) {
-    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
-    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
-    return internal_offline_kendall_tau_on_sorted_pairs<T>(sorted);
-  }
+    // O(NlogN) efficient offline algorithm (tau-b)
+    template< class T >
+    double kendall_tau(const std::vector< std::pair<T, T> > &vals);
+    // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
+    template< class T >
+    double kendall_tau(const std::deque< std::pair<T, T> > &vals);
 
-  // internal function
-  template< class T >
-  double internal_offline_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted) {
-    int n = sorted.size();
-    if (n <= 1) return NAN;
-    kd_n2_type K = 0, L = 0;
-    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+    /**
+     * straightforward pearson implementation: O(N) time complexity
+     */
+    double straightforward_pearson_r(const std::vector<double> &X, const std::vector<double> &Y) {
+      assert(X.size() == Y.size());
+      int n = X.size();
+      double sum_X = 0, sum_Y = 0, sum_XY = 0;
+      double sum_X2 = 0, sum_Y2 = 0;
 
-
-    std::map<T, int> ctr_Y;
-    // O(nlogn)
-    for (int i=0; i<n; i++) ctr_Y[sorted[i].second]++;
-    kd_n2_type n1 = 0, n2 = 0;
-    for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
-    // the second int is an unique id to allow for duplicate values in tree
-    CountingTree< std::pair<T, int> > ctr_tree;
-    int head = 0;
-    for (int i=0; i<n; i++) {
-      if (i > 0 && sorted[i-1].first != sorted[i].first) {
-        int c = i-head;
-        n1 += (kd_n2_type)c*(c-1)/2;
-        for (; head<i; head++) {
-          ctr_tree.insert(std::make_pair(sorted[head].second, head)); // add y
-        }
-        // head = i
+      for (int i=0; i<n; i++) {
+          sum_X += X[i];
+          sum_Y += Y[i];
+          sum_XY += X[i]*Y[i];
+          sum_X2 += X[i]*X[i];
+          sum_Y2 += Y[i]*Y[i];
       }
-      // K += #{yj < yi}
-      // L += #{yj > yi}
-      T yi = sorted[i].second;
-      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logn)
-      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, n)); // O(logn)
+      return (double)(n*sum_XY - sum_X*sum_Y)
+              / sqrt((n*sum_X2 - sum_X*sum_X) * (n*sum_Y2 - sum_Y*sum_Y));
     }
-    int last_c = n-head;
-    n1 += (kd_n2_type)last_c*(last_c-1)/2;
-
-    if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
-    // return (double)(K-L) / (double)n0; // tau-a
-    //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
-    return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
-    //int m = min(ctr_X.size(), ctr_Y.size());
-    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
-  }
-
-  // O(N^2) implementation for validation (tau-b)
-  template< class T >
-  double offline_slow_kendall_tau(const std::deque<std::pair<T, T> > &vals) {
-    int n = vals.size();
-    if (n <= 1) return NAN;
-    kd_n2_type K = 0, L = 0;
-    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
-    std::map<T, int> ctr_X, ctr_Y;
-    // O(nlogn)
-    for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
-    for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
-    kd_n2_type n1 = 0, n2 = 0;
-    for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
-    for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
-    // O(N^2)
-    for (int i=0; i<n; i++) {
-      for (int j=0; j<i; j++) {
-        T xi = vals[i].first,  xj = vals[j].first;
-        T yi = vals[i].second, yj = vals[j].second;
-        if ((xi < xj && yi < yj) || (xi > xj && yi > yj)) K++;
-        if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
-      }
-    }
-    if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
-    // return (double)(K-L) / (double)n0; // tau-a
-    return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
-    //int m = min(ctr_X.size(), ctr_Y.size());
-    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
-  }
-  /**
-   * straightforward pearson implementation: O(N) time complexity
-   */
-  double straightforward_pearson_r(const std::vector<double> &X, const std::vector<double> &Y) {
-    assert(X.size() == Y.size());
-    int n = X.size();
-    double sum_X = 0, sum_Y = 0, sum_XY = 0;
-    double sum_X2 = 0, sum_Y2 = 0;
-
-    for (int i=0; i<n; i++) {
-        sum_X += X[i];
-        sum_Y += Y[i];
-        sum_XY += X[i]*Y[i];
-        sum_X2 += X[i]*X[i];
-        sum_Y2 += Y[i]*Y[i];
-    }
-    return (double)(n*sum_XY - sum_X*sum_Y)
-            / sqrt((n*sum_X2 - sum_X*sum_X) * (n*sum_Y2 - sum_Y*sum_Y));
   }
 }
