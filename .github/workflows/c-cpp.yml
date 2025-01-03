@@ -22,4 +22,4 @@ jobs:
     - name: basic_tests
       run: ./basic_tests -d
     - name: benchmark
-      run: ./benchmark -d
+      run: LOOP=5 ./benchmark -d

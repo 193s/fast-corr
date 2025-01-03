@@ -37,28 +37,6 @@ namespace FastCorr {
 }
 
 namespace FastCorr::MonotonicOnlineCorr {
-  /**
-   * Internal node class defined for Spearman algorithm
-   */
-  struct SNode {
-    sp_d1_type d1;
-    sp_d2_type d2;
-    int cnt;
-    SNode() { d1 = d2 = 0, cnt = 1; }
-    SNode(sp_d1_type x1, sp_d2_type x2, int c) { d1 = x1, d2 = x2, cnt = c; }
-  };
-  inline SNode F(SNode x, SNode y) {
-    return SNode(x.d1 + y.d1, x.d2 + y.d2, x.cnt + y.cnt);
-  }
-  inline SNode addall(SNode x, int a) {
-    if (a == 0) return x;
-    int size = x.cnt;
-    x.d2 += (sp_d2_type)a*(a*size + 2*x.d1); // d2 += a*a*size + 2*a*d1
-    x.d1 += (sp_d1_type)a*size;
-    return x;
-  }
-  inline int none_h(int x, int y) { return x+y; }
-  inline SNode ts(SNode a) { return a; }
   //  < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
 
   /**
@@ -67,8 +45,7 @@ namespace FastCorr::MonotonicOnlineCorr {
    */
   template< class T >
   class Spearman : public SpearmanBase<T> {
-    using RBTree = LazyRBST< SNode, int, F, addall, none_h, ts >;
-    RBTree tree;
+    LazyRBST tree;
     CountingTree< std::pair<T, int> > ctr_tree;
     int N = 0;
     int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
@@ -91,7 +68,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
     public:
       std::deque<T> real_vals;
-      RBTree::Node *root = tree.make_tree();
+      LazyRBST::Node *root = tree.make_tree();
       Spearman() {}
       Spearman(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
@@ -105,7 +82,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
         sp_d1_type new_d1 = (z-N)*2 + dup; // *= 2
-        SNode newelem = SNode(new_d1, (sp_d2_type)new_d1*new_d1, 1);
+        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1, 1);
 
         if (root == NULL) root = tree.build({newelem});
         else {
@@ -125,7 +102,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
         sp_d1_type new_d1 = (z-0)*2 + dup; // *= 2
-        SNode newelem = SNode(new_d1, (sp_d2_type)new_d1*new_d1, 1);
+        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1, 1);
 
         if (root == NULL) root = tree.build({newelem});
         else {
