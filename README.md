@@ -1,4 +1,4 @@
-# fast-nonparametric-corr
+# fast-corr
 [![C/C++ CI](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-nonparametric-corr/actions/workflows/c-cpp.yml)  
 Currently works only on g++.  
 
@@ -26,9 +26,10 @@ OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
 - `void pop_back()`
 - `double kendall_tau()` (alias: `double r()`)  
 
+`kendall_tau()` function returns tau-b (tau-c option will be added soon).
 
 ## Installation
-`git clone https://github.com/193s/fast-nonparametric-corr/`
+`git clone https://github.com/193s/fast-corr/`
 ### testing:
 `g++-14 test/basic_tests.cpp -O3`  
 
