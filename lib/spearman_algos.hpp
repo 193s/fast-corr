@@ -1,10 +1,7 @@
 #pragma once
 #include <vector>
 #include <deque>
-#include <stack>
 #include <map>
-#include <cmath>
-#include <algorithm>
 #include "fast_corr_base.hpp"
 #include "lazy_reversible_rbst.hpp"
 

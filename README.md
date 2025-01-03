@@ -92,5 +92,3 @@ from scipy import stats
 ### Assumptions
 `N<=2642245` for spearman and `N<=4294967296` for kendall is assumed during the calculation (`N` is the current number of pairs `(x,y)` in the structure at the time of each operation).  
 For larger `N`s, look for the first few lines of `lib/fast_corr_base.hpp` and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double, \_\_int128, etc.  
-f
-

@@ -136,7 +136,7 @@ TEST_CASE("check results with Python's scipy.stats") {
 }
 bool assert_eq(vector<int> x, vector<int> y) {
   assertmsg(x.size() == y.size(), "assertion failed: size does not match");
-  for (int i=0; i<x.size(); i++) {
+  for (int i=0; i<(int)x.size(); i++) {
     assertmsg(x[i] == y[i], "assertion failed");
     if (x[i] != y[i]) {
       cout<<"x={";for(int i:x)cout<<i<<",";cout<<"}, y={";for(int i:y)cout<<i<<",";cout<<"}\n";

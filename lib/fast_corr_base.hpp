@@ -1,4 +1,11 @@
 #pragma once
+#include <cassert>
+#include <vector>
+#include <map>
+#include <deque>
+#include <stack>
+#include <algorithm>
+#include <cmath>
 // CountingTree<T> is currently dependent on G++ extensions
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
@@ -193,7 +200,7 @@ namespace FastCorr {
     //for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
     // O(NlogN)
-    std::vector<T> cur_set;
+    std::stack<T> cur_set;
     CountingTree< std::pair<T, int> > ctr_tree;
     int id = 0; // add unique id to allow for duplicate values in tree
     for (int i=0; i<N; i++) {
@@ -202,14 +209,14 @@ namespace FastCorr {
       // L += #{yj > yi}
       K += ctr_tree.order_of_key(std::make_pair(yi, -1));
       L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, N)); // assuming id < N
-      cur_set.push_back(yi);
+      cur_set.push(yi);
       if (i+1 < N && sorted[i+1].first != xi) {
         int c = cur_set.size();
         n1 += (kd_n2_type)c*(c-1)/2;
         while (cur_set.size() > 0) {
-          T y = cur_set.back();
+          T y = cur_set.top();
           ctr_tree.insert(std::make_pair(y, id++)); // add y
-          cur_set.pop_back();
+          cur_set.pop();
         }
       }
     }
@@ -253,5 +260,24 @@ namespace FastCorr {
     return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
     //int m = min(ctr_X.size(), ctr_Y.size());
     //return 2.0*(double)(K-L) / (N*N * (double)(m-1) / (double)m); // tau-c
+  }
+  /**
+   * straightforward pearson implementation: O(N) time complexity
+   */
+  double straightforward_pearson_r(std::vector<double> X, std::vector<double> Y) {
+    assert(X.size() == Y.size());
+    int n = X.size();
+    double sum_X = 0, sum_Y = 0, sum_XY = 0;
+    double sum_X2 = 0, sum_Y2 = 0;
+
+    for (int i=0; i<n; i++) {
+        sum_X += X[i];
+        sum_Y += Y[i];
+        sum_XY += X[i]*Y[i];
+        sum_X2 += X[i]*X[i];
+        sum_Y2 += Y[i]*Y[i];
+    }
+    return (double)(n*sum_XY - sum_X*sum_Y)
+            / sqrt((n*sum_X2 - sum_X*sum_X) * (n*sum_Y2 - sum_Y*sum_Y));
   }
 }

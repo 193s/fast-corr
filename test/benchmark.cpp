@@ -34,7 +34,7 @@ void internal_random_op_test(int Q, bool duplicate_test) {
   vector< pair<OPERATION_TYPE, double> > operations;
   vector<double> pool = generate_random_double_sequence(Q, seed, duplicate_test);
   int n = 0;
-  while (operations.size() < Q) {
+  while ((int)operations.size() < Q) {
     switch (mt()%2) {
       case 0:
         // push_back or push_front
@@ -61,7 +61,7 @@ void internal_random_op_test(int Q, bool duplicate_test) {
         break;
     }
   }
-  while (operations.size() > Q) operations.pop_back();
+  while ((int)operations.size() > Q) operations.pop_back();
   while (n-- > 0) operations.push_back(make_pair(OPERATION_TYPE::POP_FRONT, 0));
   cout << "testing with completely random operations: Q="<<Q<<", seed=" << seed << ", duplicate_test="<<duplicate_test<<"\n";
   internal_test(operations, false);
