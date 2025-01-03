@@ -13,18 +13,14 @@ namespace FastCorr {
     NodeVal(sp_d1_type x1, sp_d2_type x2, int c) { d1 = x1, d2 = x2, cnt = c; }
   };
   inline NodeVal f(const NodeVal &x, const NodeVal &y) {
-  //inline NodeVal f(NodeVal x, NodeVal y) {
     return NodeVal(x.d1 + y.d1, x.d2 + y.d2, x.cnt + y.cnt);
   }
-  inline NodeVal g(NodeVal x, int a) {
-    if (a == 0) return x;
+  inline void g(NodeVal &x, int a) { // this modifies the content of x
+    if (a == 0) return;
     int size = x.cnt;
     x.d2 += (sp_d2_type)a*(a*size + 2*x.d1); // d2 += a*a*size + 2*a*d1
     x.d1 += (sp_d1_type)a*size;
-    return x;
   }
-  inline int h(int x, int y) { return x+y; }
-
   typedef int E;
   typedef NodeVal T;
 
@@ -88,9 +84,9 @@ namespace FastCorr {
     }
 
     void propagate(Ptr t, const E &x) {
-      t->lazy = h(t->lazy, x);
-      t->key = g(t->key, x);
-      t->sum = g(t->sum, x);
+      t->lazy += x;
+      g(t->key, x);
+      g(t->sum, x);
     }
   };
 }
