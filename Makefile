@@ -5,7 +5,7 @@ LIB=lib/rbst_base.hpp lib/lazy_reversible_rbst.hpp lib/fast_corr_base.hpp lib/sp
 ./basic_tests: $(LIB) test/basic_tests.cpp
 	$(GPP) test/basic_tests.cpp -O3 -Wall -o basic_tests
 
-./benchmark: $(LIB) test/benchmark.cpp
+./benchmark: $(LIB) test/basic_tests.cpp test/benchmark.cpp
 	$(GPP) test/benchmark.cpp -O3 -Wall -o benchmark
 
 ./sample: $(LIB) sample.cpp

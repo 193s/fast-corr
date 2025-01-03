@@ -276,9 +276,9 @@ namespace FastCorr::MonotonicOnlineCorr {
       sp_d2_type spearman_d() const {
         int n = X_val.size();
         // convert deque to vector
-        std::vector<int> X = convert_array_to_rank(std::vector(X_val.begin(), X_val.end()));
+        std::vector<int> X = convert_array_to_rank(std::vector<T>(X_val.begin(), X_val.end()));
         std::vector<int> Y(n);
-        for (int i=1; i<=n; i++) Y[i-1] = i*2; // *2
+        for (int i=0; i<n; i++) Y[i] = (i+1)*2; // *2
         sp_d2_type d = 0;
         for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
         return d;

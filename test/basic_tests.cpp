@@ -16,7 +16,14 @@ using namespace std;
 using namespace FastCorr;
 #define assertmsg(expr, msg) assert(((void)msg, expr))
 
-const int LOOP = 3;
+int LOOP = 3;
+TEST_CASE("test settings") {
+  if (getenv("LOOP")) {
+    LOOP = stoi(getenv("LOOP"));
+    MESSAGE("env LOOP specified: LOOP = ", LOOP, " (default=3)");
+  }
+}
+
 const double EPS = 1e-9;
 enum class OPERATION_TYPE { PUSH_FRONT, PUSH_BACK, POP_FRONT, POP_BACK, CALCULATE_R };
 

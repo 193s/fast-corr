@@ -72,7 +72,7 @@ namespace FastCorr {
         double r() { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
         sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
-        // Sy = 0 under the sliding constraint
+        // Sy = 0 under monotonic constraints
     };
   }
 
@@ -109,7 +109,7 @@ namespace FastCorr {
   }
 
   /**
-   * CountingTree<T>: set<T> with order_of_key(T val) and erase_kth(int z) implemented
+   * CountingTree<T>: set of type T with order_of_key(val) and erase_kth(k) implemented in O(logN)
    */
   template< class T >
   class CountingTree {
@@ -124,8 +124,8 @@ namespace FastCorr {
       int order_of_key(const T &val) const {
         return gpp_tree.order_of_key(val);
       }
-      void erase_kth(const int &z) {
-        gpp_tree.erase(gpp_tree.find_by_order(z));
+      void erase_kth(const int &k) {
+        gpp_tree.erase(gpp_tree.find_by_order(k));
       }
       size_t size() const {
         return gpp_tree.size();
@@ -137,6 +137,7 @@ namespace FastCorr {
    * ranks are multiplied by 2 so that all ranks will be integers
    * e.g. [3, 12123, 0] -> [2, 3, 1]*2
    * e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
+   * time complexity: O(NlogN)
    */
   template< class T >
   std::vector<int> convert_array_to_rank(const std::vector<T> &X) {
@@ -146,7 +147,7 @@ namespace FastCorr {
     // n>=2
     std::vector<std::pair<T, int> > X2(n);
     for (int i=0; i<n; i++) X2[i] = std::pair<T, int>(X[i], i);
-    std::sort(X2.begin(), X2.end());
+    std::sort(X2.begin(), X2.end()); // O(nlogn)
     std::vector<int> ret(n);
     //for (int i=0; i<n; i++) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
     int z = 0, head = 0;
@@ -158,38 +159,48 @@ namespace FastCorr {
         for (; head<i; head++) ret[X2[head].second] = rank;
       }
     }
-    // finalize rank
-    int rank = z*2 + 1 + (n-head); // 1 + z + (number of same values - 1)/2
-    for (; head<n; head++) ret[X2[head].second] = rank;
-    //cout<<"{";for (T x:X)cout<<x<<",";cout<<"} -> ";
-    //cout<<"{";for (int x:ret)cout<<x/2.0<<",";cout<<"}\n";
+    int last_rank = z*2 + 1 + (n-head); // 1 + z + (number of same values - 1)/2
+    for (; head<n; head++) ret[X2[head].second] = last_rank;
     return ret;
   }
 
-  // O(NlogN) efficient offline algorithm (tau-b)
-  // TODO: pair<T, int>, iterator, ...
+  // internal function
   template< class T >
-  double offline_kendall_tau(const std::deque< std::pair<T, T> > &vals) {
-    int N = vals.size();
-    if (N <= 1) return NAN;
-    kd_n2_type K = 0, L = 0, n0 = (kd_n2_type)N*(N-1)/2;
-    std::vector< std::pair<T, T> > sorted;
-    for (auto &p : vals) sorted.push_back(p);
-    // O(NlogN)
-    std::sort(sorted.begin(), sorted.end());
+  double internal_offline_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted);
 
-    //std::map<T, int> ctr_X;
+  // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
+  template< class T >
+  inline double offline_kendall_tau(const std::deque< std::pair<T, T> > &vals) {
+    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+    return internal_offline_kendall_tau_on_sorted_pairs<T>(sorted);
+  }
+  // O(NlogN) efficient offline algorithm (tau-b): wrapper for vector
+  template< class T >
+  inline double offline_kendall_tau(const std::vector< std::pair<T, T> > &vals) {
+    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+    std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+    return internal_offline_kendall_tau_on_sorted_pairs<T>(sorted);
+  }
+
+  // internal function
+  template< class T >
+  double internal_offline_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted) {
+    int n = sorted.size();
+    if (n <= 1) return NAN;
+    kd_n2_type K = 0, L = 0;
+    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+
+
     std::map<T, int> ctr_Y;
-    // O(NlogN)
-    //for (int i=0; i<N; i++) ctr_X[sorted[i].second]++;
-    for (int i=0; i<N; i++) ctr_Y[sorted[i].second]++;
+    // O(nlogn)
+    for (int i=0; i<n; i++) ctr_Y[sorted[i].second]++;
     kd_n2_type n1 = 0, n2 = 0;
-    //for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
     // the second int is an unique id to allow for duplicate values in tree
     CountingTree< std::pair<T, int> > ctr_tree;
     int head = 0;
-    for (int i=0; i<N; i++) {
+    for (int i=0; i<n; i++) {
       if (i > 0 && sorted[i-1].first != sorted[i].first) {
         int c = i-head;
         n1 += (kd_n2_type)c*(c-1)/2;
@@ -201,10 +212,10 @@ namespace FastCorr {
       // K += #{yj < yi}
       // L += #{yj > yi}
       T yi = sorted[i].second;
-      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logN)
-      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, N)); // O(logN)
+      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logn)
+      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, n)); // O(logn)
     }
-    int last_c = N-head;
+    int last_c = n-head;
     n1 += (kd_n2_type)last_c*(last_c-1)/2;
 
     if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
@@ -212,25 +223,25 @@ namespace FastCorr {
     //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
     return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
     //int m = min(ctr_X.size(), ctr_Y.size());
-    //return 2.0*(double)(K-L) / (N*N * (double)(m-1) / (double)m); // tau-c
+    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
   }
 
   // O(N^2) implementation for validation (tau-b)
   template< class T >
   double offline_slow_kendall_tau(const std::deque<std::pair<T, T> > &vals) {
-    int N = vals.size();
-    if (N <= 1) return NAN;
+    int n = vals.size();
+    if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
-    kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
+    const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
     std::map<T, int> ctr_X, ctr_Y;
-    // O(NlogN)
-    for (int i=0; i<N; i++) ctr_X[vals[i].first]++;
-    for (int i=0; i<N; i++) ctr_Y[vals[i].second]++;
+    // O(nlogn)
+    for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
+    for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
     kd_n2_type n1 = 0, n2 = 0;
     for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
     // O(N^2)
-    for (int i=0; i<N; i++) {
+    for (int i=0; i<n; i++) {
       for (int j=0; j<i; j++) {
         T xi = vals[i].first,  xj = vals[j].first;
         T yi = vals[i].second, yj = vals[j].second;
@@ -242,7 +253,7 @@ namespace FastCorr {
     // return (double)(K-L) / (double)n0; // tau-a
     return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
     //int m = min(ctr_X.size(), ctr_Y.size());
-    //return 2.0*(double)(K-L) / (N*N * (double)(m-1) / (double)m); // tau-c
+    //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
   }
   /**
    * straightforward pearson implementation: O(N) time complexity
