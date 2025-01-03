@@ -3,7 +3,7 @@
 #include <deque>
 #include <map>
 #include "fast_corr_base.hpp"
-#include "lazy_reversible_rbst.hpp"
+#include "lazy_rbst.hpp"
 
 namespace FastCorr {
   double spearman_r_from_n_4d_Sx_and_Sy(int n, sp_d2_type d, sp_d2_type Sx, sp_d2_type Sy) {
@@ -67,7 +67,7 @@ namespace FastCorr::MonotonicOnlineCorr {
    */
   template< class T >
   class Spearman : public SpearmanBase<T> {
-    using RBTree = LazyReversibleRBST< SNode, int, F, addall, none_h, ts >;
+    using RBTree = LazyRBST< SNode, int, F, addall, none_h, ts >;
     RBTree tree;
     CountingTree< std::pair<T, int> > ctr_tree;
     int N = 0;

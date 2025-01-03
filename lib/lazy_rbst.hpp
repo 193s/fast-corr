@@ -3,37 +3,29 @@
 
 namespace FastCorr {
   /**
-   * @brief Randomized binary search tree with lazy-propergation and reversion features
+   * @brief Randomized binary search tree with lazy propergation
    */
   template <typename T, typename E>
-  struct LazyReversibleRBSTNode {
-    typename RBSTBase<LazyReversibleRBSTNode>::Ptr l, r;
+  struct LazyRBSTNode {
+    typename RBSTBase<LazyRBSTNode>::Ptr l, r;
     T key, sum;
     E lazy;
     int cnt;
-    bool rev;
 
-    LazyReversibleRBSTNode(const T &t = T(), const E &e = E())
-        : l(), r(), key(t), sum(t), lazy(e), cnt(1), rev(false) {}
+    LazyRBSTNode(const T &t = T(), const E &e = E())
+        : l(), r(), key(t), sum(t), lazy(e), cnt(1) {}
   };
 
   template <typename T, typename E, T (*f)(T, T), T (*g)(T, E), E (*h)(E, E),
             T (*ts)(T)>
-  struct LazyReversibleRBST : RBSTBase<LazyReversibleRBSTNode<T, E>> {
-    using Node = LazyReversibleRBSTNode<T, E>;
-    using base = RBSTBase<LazyReversibleRBSTNode<T, E>>;
+  struct LazyRBST : RBSTBase<LazyRBSTNode<T, E>> {
+    using Node = LazyRBSTNode<T, E>;
+    using base = RBSTBase<LazyRBSTNode<T, E>>;
     using base::merge;
     using base::split;
     using typename base::Ptr;
 
-    LazyReversibleRBST() = default;
-
-    void toggle(Ptr t) {
-      if(!t) return;
-      std::swap(t->l, t->r);
-      t->sum = ts(t->sum);
-      t->rev ^= true;
-    }
+    LazyRBST() = default;
 
     T fold(Ptr &t, int a, int b) {
       auto x = split(t, a);
@@ -41,13 +33,6 @@ namespace FastCorr {
       auto ret = sum(y.first);
       t = merge(x.first, merge(y.first, y.second));
       return ret;
-    }
-
-    void reverse(Ptr &t, int a, int b) {
-      auto x = split(t, a);
-      auto y = split(x.second, b - a);
-      toggle(y.first);
-      t = merge(x.first, merge(y.first, y.second));
     }
 
     void apply(Ptr &t, int a, int b, const E &e) {
@@ -70,11 +55,6 @@ namespace FastCorr {
     }
 
     void push(Ptr t) override {
-      if (t->rev) {
-        if (t->l) toggle(t->l);
-        if (t->r) toggle(t->r);
-        t->rev = false;
-      }
       if (t->lazy != E()) {
         if (t->l) propagate(t->l, t->lazy);
         if (t->r) propagate(t->r, t->lazy);

@@ -5,7 +5,6 @@
 #include <map>
 #include <algorithm>
 #include "fast_corr_base.hpp"
-#include "lazy_reversible_rbst.hpp"
 
 namespace FastCorr::MonotonicOnlineCorr {
   template< class T >
