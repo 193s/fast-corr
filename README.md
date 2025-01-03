@@ -14,7 +14,7 @@ Currently works only on g++.
 - `void push_back(T x_val)`
 - `void pop_front()`
 - `void pop_back()`
-- `double spearman_r()`
+- `double spearman_r()` (alias: `double r()`)
 
 OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.  
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.
@@ -24,7 +24,7 @@ OnlineSpearmanLinear\<T\> may work faster on smaller `N`s.
 - `void push_back(T x_val)`
 - `void pop_front()`
 - `void pop_back()`
-- `double kendall_tau()`  
+- `double kendall_tau()` (alias: `double r()`)  
 
 
 ## Installation
@@ -90,5 +90,6 @@ from scipy import stats
 
 ### Assumptions
 `N<=2642245` for spearman and `N<=4294967296` for kendall is assumed during the calculation (`N` is the current number of pairs `(x,y)` in the structure at the time of each operation).  
-For larger `N`s, look for the first few lines in the .hpp file and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double or use any bigint implementation.  
+For larger `N`s, look for the first few lines of `lib/fast_corr_base.hpp` and modify the data types (`d1_type`, `d2_type`, `kd_n2_type`) to double, \_\_int128, etc.  
+f
 

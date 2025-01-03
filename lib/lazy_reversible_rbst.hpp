@@ -2,6 +2,9 @@
 #include "rbst_base.hpp"
 
 namespace FastCorr {
+  /**
+   * @brief Randomized binary search tree with lazy-propergation and reversion features
+   */
   template <typename T, typename E>
   struct LazyReversibleRBSTNode {
     typename RBSTBase<LazyReversibleRBSTNode>::Ptr l, r;
@@ -85,9 +88,4 @@ namespace FastCorr {
       t->sum = g(t->sum, x);
     }
   };
-
-  /**
-   * @brief 遅延伝搬反転可能乱択平衡二分木
-   * @docs docs/rbst/lazy-reversible-rbst.md
-   */
 }

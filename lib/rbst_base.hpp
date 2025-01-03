@@ -2,6 +2,9 @@
 #include <cstdint>
 
 namespace FastCorr {
+  /**
+   * @brief RBSTBase<Node>: A base class for randomized (self-balancing) binary search trees
+   */
   template <typename Node>
   struct RBSTBase {
     using Ptr = Node *;
@@ -90,8 +93,4 @@ namespace FastCorr {
 
     virtual Ptr update(Ptr) = 0;
   };
-
-  /**
-   * @brief 乱択平衡二分木(基底クラス)
-   */
 }

@@ -9,8 +9,9 @@
 #include "lazy_reversible_rbst.hpp"
 
 namespace FastCorr::MonotonicOnlineCorr {
-  // Internal node class defined for Spearman algorithm
-  // < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
+  /**
+   * Internal node class defined for Spearman algorithm
+   */
   struct SNode {
     sp_d1_type d1;
     sp_d2_type d2;
@@ -30,9 +31,12 @@ namespace FastCorr::MonotonicOnlineCorr {
   }
   inline int none_h(int x, int y) { return x+y; }
   inline SNode ts(SNode a) { return a; }
+  //  < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
 
-  // Efficient Online Implementation of Spearman's rank correlation with Binary Search Tree
-  // adding/removing a value requires O(logN) time complexity and O(N) space complexity
+  /**
+   * Efficient Online Implementation of Spearman's rank correlation with Binary Search Tree
+   * adding/removing a value requires O(logN) time complexity and O(N) space complexity
+   */
   template< class T >
   class Spearman : public SpearmanBase<T> {
 
@@ -135,8 +139,10 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       int size() { return N; }
   };
-  // Online Implementation of Spearman's rank correlation without Binary Search Tree
-  // adding/removing a value requires O(N) time complexity and O(N) space complexity
+  /**
+   * Online Implementation of Spearman's rank correlation without Binary Search Tree
+   * adding/removing a value requires O(N) time complexity and O(N) space complexity
+   */
   template< class T >
   class SpearmanLinear : public SpearmanBase<T> {
     int N = 0;
@@ -218,8 +224,10 @@ namespace FastCorr::MonotonicOnlineCorr {
   };
 
 
-  // Traditional Implementation of Spearman's rank correlation:
-  // adding/removing a value requires O(NlogN) time complexity and O(M) space complexity
+  /**
+   * Traditional Implementation of Spearman's rank correlation:
+   * adding/removing a value requires O(NlogN) time complexity and O(M) space complexity
+   */
   template< class T >
   class OfflineSpearman : public SpearmanBase<T> {
     int N = 0;

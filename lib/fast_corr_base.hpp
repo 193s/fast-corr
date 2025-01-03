@@ -16,6 +16,9 @@ namespace FastCorr {
     // under N <= 4294967296 (aprox. 4*10^9), kd_n2_type won't exceed LONG_MAX=2^63-1
     // also assuming maximum number of operations <= INT_MAX by "int id_for_tree"
 
+  /**
+   * @brief A module for online correlation algorithms on partial monotonicity constraints
+   */
   namespace MonotonicOnlineCorr {
     template< class T >
     class KendallBase {
@@ -26,6 +29,7 @@ namespace FastCorr {
         virtual void pop_back() = 0;
         virtual double kendall_tau() = 0;
         virtual int size() = 0;
+        double r() { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
     template< class T >
@@ -57,12 +61,16 @@ namespace FastCorr {
             return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
           }
         }
+        double r() { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
         sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
         // Sy = 0 under the sliding constraint
     };
   }
 
+  /**
+   * @brief A module for online correlation algorithms (with no constraints)
+   */
   namespace OnlineCorr {
     template< class TX, class TY >
     class Base {
@@ -92,7 +100,9 @@ namespace FastCorr {
     };
   }
 
-  // CountingTree<T>: set<T> with order_of_key(T val) and erase_kth(int z) implemented
+  /**
+   * CountingTree<T>: set<T> with order_of_key(T val) and erase_kth(int z) implemented
+   */
   template< class T >
   class CountingTree {
     using GPPTree = __gnu_pbds::tree< T, __gnu_pbds::null_type, std::less<T>,
@@ -114,9 +124,12 @@ namespace FastCorr {
       }
   };
 
-  // multiply all ranks by 2 to treat them as integer
-  // e.g. [3, 12123, 0] -> [2, 3, 1]*2
-  // e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
+  /**
+   * returns the ranks of given vector of any type
+   * ranks are multiplied by 2 so that all ranks will be integers
+   * e.g. [3, 12123, 0] -> [2, 3, 1]*2
+   * e.g. [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
+   */
   template< class T >
   std::vector<int> convert_array_to_rank(std::vector<T> X) {
     int n = X.size();
