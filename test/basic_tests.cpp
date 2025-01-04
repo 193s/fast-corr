@@ -65,6 +65,31 @@ TEST_CASE("OnlineCorr::Pearson basic testing") {
   CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=1
 }
 
+TEST_CASE("OnlineCorr::Pearson with a lot of operations") {
+  OnlineCorr::Pearson ps;
+  vector<double> rand_xs, rand_ys;
+  int Q = 1000000;
+  for (int i=0; i<Q; i++) rand_xs.push_back(rand() % 100);
+  for (int i=0; i<Q; i++) rand_ys.push_back(rand() % 100);
+
+  SUBCASE("compare with offline algorithm") {
+    for (int i=0; i<Q; i++) ps.add(rand_xs[i], rand_ys[i]);
+    CHECK(abs( OfflineCorr::pearson_r(rand_xs, rand_ys) - ps.pearson_r()) < EPS);
+  }
+  SUBCASE("add and remove") {
+    ps.add(1, 9);
+    ps.add(3, 5);
+    ps.add(-10, -10);
+    //cout << ps.pearson_r() << "\n";
+    double initial_r = ps.pearson_r();
+
+    for (int i=0; i<Q; i++) ps.add(rand_xs[i], rand_ys[i]);
+    for (int i=0; i<Q; i++) ps.remove(rand_xs[i], rand_ys[i]);
+    //cout << ps.pearson_r() << "\n";
+    CHECK(abs( ps.pearson_r() - initial_r ) < 1e-3);
+  }
+}
+
 
 // duplicate check in O(NlogN)
 template< class T >
