@@ -66,18 +66,20 @@ This is nothing new, just a very straightforward set of implementations.
 ----------------
 
 ## Usage
+(Makefile takes CPP environment variable: e.g. `CPP='clang++ --std=c++14' make`)
+
 ### testing:
-`g++-14 test/basic_tests.cpp -O3`  
+`make basic_tests && ./basic_tests`  
 
 ### benchmark:
-`g++-14 test/benchmark.cpp -O3`  
+`make benchmark && ./benchmark`  
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
 - `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000
 -->
 
 ### running a sample code:
-`g++-14 sample.cpp -O3`  
+`g++-14 sample.cpp -O3 -o sample && ./sample`  
 ```c++
 #include <iostream>
 #include "lib/spearman_algos.hpp"

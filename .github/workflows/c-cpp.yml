@@ -14,9 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: compile_test
-      run: GPP='g++ --std=c++14' make compile_test
+      run: CPP='g++ --std=c++14' make compile_test
     - name: make all
-      run: GPP='g++ --std=c++14' make all
+      run: CPP='g++ --std=c++14' make all
     - name: sample test
       run: ./sample -d
     - name: basic_tests
