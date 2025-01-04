@@ -9,6 +9,7 @@
 #include <random>
 #include <ctime>
 #include <cassert>
+#include <iterator>
 using namespace std;
 
 #include "../lib/spearman_algos.hpp"

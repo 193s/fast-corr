@@ -1,6 +1,5 @@
 # fast-corr
 [![C/C++ CI](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/193s/fast-corr/actions/workflows/c-cpp.yml)  
-Currently works only on g++ (to be fixed).  
 
 ## Installation
 `git clone https://github.com/193s/fast-corr/`
@@ -22,7 +21,8 @@ Details and applications of the constraints are discussed in my paper yet to be 
 - `double spearman_r()` (alias: `double r()`)
 
 OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memory space.  
-`T` can be `int`, `double`, ... or any other type with comparison operators defined.
+`T` can be `int`, `double`, ... or any other type with comparison operators defined.  
+Currently works a bit faster on g++.  
 
 #### FastCorr::MonotonicOnlineCorr::Kendall\<T\>
 - `void push_front(const T &x_val)`
