@@ -18,32 +18,32 @@ namespace FastCorr::OfflineCorr {
 // ===== Helper functions =========================================================== //
 
 namespace FastCorr {
-  double spearman_r_from_n_4d_Sx_and_Sy(int n, sp_d2_type d, sp_d2_type Sx, sp_d2_type Sy) {
+  double spearman_r_from_n_4d_Gx_and_Gy(int n, sp_d2_type d, sp_d2_type Gx, sp_d2_type Gy) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if (Sx == n3 || Sy == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Sx == 0 && Sy == 0) return 1.0 - 1.5*d / n3;
+    if (Gx == n3 || Gy == n3) return NAN; // rank X_i can not be defined in this case
+    else if (Gx == 0 && Gy == 0) return 1.0 - 1.5*d / n3;
     else {
       // general formula:
-      // (1-(6.0/n3)*(D + Sx/12 + Sy/12)) / (sqrt(1 - Sx/n3) * sqrt(1-Sy/n3))
-      // = (2-(1/n3)*(12*D + Sx + Sy)) / (2*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
-      // = (2-(1/n3)*(3*(4D) + Sx + Sy)) / (2*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
-      // = (2*n3 - 3*(4D) - Sx - Sy) / (2*n3*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
-      return (2.0*n3 - Sx - Sy - 3.0*d) /
-        (2.0 * n3 * sqrt(1.0-(double)Sx/(double)n3) * sqrt(1.0-(double)Sy/(double)n3));
+      // (Sx + Sy - D) / (2 * sqrt(Sx) * sqrt(Sy)), Sx := (n3-Gx)/12, Sy := (n3-Gy)/12
+      // = (12*Sx + 12*Sy - 12*D) / (2 * sqrt(n3-Gx) * sqrt(n3-Gy))
+      // = (2*n3 - Gx - Gy - 12*D) / (2 * sqrt(n3-Gx) * sqrt(n3-Gy))
+      // = (2*n3 - Gx - Gy - 3*(4D)) / (2 * n3 * sqrt(1-Gx/n3) * sqrt(1-Gy/n3))
+      return (2.0*n3 - Gx - Gy - 3.0*d) /
+        (2.0 * n3 * sqrt(1.0-(double)Gx/(double)n3) * sqrt(1.0-(double)Gy/(double)n3));
     }
   }
-  // special case when Sy = 0
-  double spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx) {
+  // special case when Gy = 0
+  double spearman_r_from_n_4d_and_Gx(int n, sp_d2_type d, sp_d2_type Gx) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if (Sx == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Sx == 0) return 1.0 - 1.5*d / n3;
+    if (Gx == n3) return NAN; // rank X_i can not be defined in this case
+    else if (Gx == 0) return 1.0 - 1.5*d / n3;
     else {
-      // when Sy = 0,
-      // = (2*n3 - 3*(4D) - Sx - Sy) / (2*n3*(sqrt(1 - Sx/n3) * sqrt(1-Sy/n3)))
-      // = (2*n3 - 3*(4D) - Sx) / (2*n3*(sqrt(1 - Sx/n3))
-      return (2.0*n3 - Sx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Sx/(double)n3));
+      // when Gy = 0,
+      // = (2*n3 - 3*(4D) - Gx - Gy) / (2*n3*(sqrt(1 - Gx/n3) * sqrt(1-Gy/n3)))
+      // = (2*n3 - 3*(4D) - Gx) / (2*n3*(sqrt(1 - Gx/n3))
+      return (2.0*n3 - Gx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Gx/(double)n3));
     }
   }
 
@@ -90,12 +90,12 @@ namespace FastCorr::MonotonicOnlineCorr {
       virtual size_t size() const = 0;
       double spearman_r() const {
         sp_d2_type d = spearman_d(); // d = sum[i=1..n]((2d_i)^2) = 4*actual_D
-        return FastCorr::spearman_r_from_n_4d_and_Sx(size(), d, Sx);
+        return FastCorr::spearman_r_from_n_4d_and_Gx(size(), d, Gx);
       }
       double r() const { return spearman_r(); } // r() is an alias for spearman_r()
     protected:
-      sp_d2_type Sx = 0; // sum(t_i^3 - t_i)
-      // Sy = 0 under monotonic constraints
+      sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
+      // Gy = 0 under monotonic constraints
   };
   //  < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
 
@@ -112,7 +112,7 @@ namespace FastCorr::MonotonicOnlineCorr {
     inline std::pair<int, int> _add_value(const T &x_val) {
       int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
       int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z;
-      SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx += (sp_d2_type)3*dup*(dup+1);
       ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
       return std::make_pair(z, dup);
     }
@@ -122,7 +122,7 @@ namespace FastCorr::MonotonicOnlineCorr {
       ctr_tree.erase_kth(z); // erase @z (@z+dup) will also work
       // ctr_tree.erase(std::make_pair(x_val, <id to erase>));
       assert(dup >= 0);
-      SpearmanBase<T>::Sx -= (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx -= (sp_d2_type)3*dup*(dup+1);
       return std::make_pair(z, dup);
     }
 
@@ -216,14 +216,14 @@ namespace FastCorr::MonotonicOnlineCorr {
     // internal function: returns the number of existing pairs with the same x-values (>=0)
     inline int _add_value(const T &x_val) {
       int dup = duplicate_counter[x_val]++;
-      SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx += (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
     inline int _remove_value(const T &x_val) {
       int dup = --duplicate_counter[x_val]; //assert dup>=0
       if (dup == 0) duplicate_counter.erase(x_val);
-      SpearmanBase<T>::Sx -= (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx -= (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     public:
@@ -300,14 +300,14 @@ namespace FastCorr::MonotonicOnlineCorr {
     // internal function: returns the number of existing pairs with the same x-values (>=0)
     inline int _add_value(const T &x_val) {
       int dup = duplicate_counter[x_val]++;
-      SpearmanBase<T>::Sx += (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx += (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
     inline int _remove_value(const T &x_val) {
       int dup = --duplicate_counter[x_val]; //assert dup>=0
       if (dup == 0) duplicate_counter.erase(x_val);
-      SpearmanBase<T>::Sx -= (sp_d2_type)3*dup*(dup+1);
+      SpearmanBase<T>::Gx -= (sp_d2_type)3*dup*(dup+1);
       return dup;
     }
     public:
@@ -367,18 +367,18 @@ namespace FastCorr::OfflineCorr {
     sp_d2_type d = 0;
     for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
 
-    // calculate Sx and Sy
+    // calculate Gx and Gy
     std::map<T, int> X_ctr, Y_ctr;
-    sp_d2_type Sx = 0, Sy = 0;
+    sp_d2_type Gx = 0, Gy = 0;
     for (auto &x : x_vals) {
       int dup = X_ctr[x]++;
-      Sx += (sp_d2_type)3*dup*(dup+1);
+      Gx += (sp_d2_type)3*dup*(dup+1);
     }
     for (auto &y : y_vals) {
       int dup = Y_ctr[y]++;
-      Sy += (sp_d2_type)3*dup*(dup+1);
+      Gy += (sp_d2_type)3*dup*(dup+1);
     }
-    return spearman_r_from_n_4d_Sx_and_Sy(n, d, Sx, Sy);
+    return spearman_r_from_n_4d_Gx_and_Gy(n, d, Gx, Gy);
   }
   template< class T >
   double spearman_r(const std::vector< std::pair<T, T> > &vals) {
