@@ -105,7 +105,7 @@ namespace FastCorr::MonotonicOnlineCorr {
    */
   template< class T >
   class Spearman : public SpearmanBase<T> {
-    LazyRBST tree;
+    D2LazyRBST tree;
     CountingTree< std::pair<T, int> > ctr_tree;
     int N = 0;
     int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
@@ -128,7 +128,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
     public:
       std::deque<T> real_vals;
-      LazyRBST::Node *root = tree.make_tree();
+      D2LazyRBST::Node *root = tree.make_tree();
       Spearman() {}
       Spearman(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
@@ -142,7 +142,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
         sp_d1_type new_d1 = (z-N)*2 + dup; // *= 2
-        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1, 1);
+        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1);
 
         if (root == NULL) root = tree.build({newelem});
         else {
@@ -162,7 +162,7 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
         sp_d1_type new_d1 = (z-0)*2 + dup; // *= 2
-        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1, 1);
+        NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1);
 
         if (root == NULL) root = tree.build({newelem});
         else {

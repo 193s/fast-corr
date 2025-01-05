@@ -66,7 +66,7 @@ This is nothing new, just a very straightforward set of implementations.
 ----------------
 
 ## Usage
-(Makefile takes CPP environment variable: e.g. `CPP='clang++ --std=c++14' make`)
+(Makefile takes C\_COMPILER environment variable: e.g. `C_COMPILER='clang++ --std=c++14' make`)
 
 ### testing:
 `make basic_tests && ./basic_tests`  

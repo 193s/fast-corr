@@ -8,18 +8,16 @@ namespace FastCorr {
   struct NodeVal {
     sp_d1_type d1;
     sp_d2_type d2;
-    int cnt;
-    NodeVal() { d1 = d2 = 0, cnt = 1; }
-    NodeVal(sp_d1_type x1, sp_d2_type x2, int c) { d1 = x1, d2 = x2, cnt = c; }
+    NodeVal() { d1 = d2 = 0; }
+    NodeVal(sp_d1_type x1, sp_d2_type x2) { d1 = x1, d2 = x2; }
   };
   inline NodeVal f(const NodeVal &x, const NodeVal &y) {
-    return NodeVal(x.d1 + y.d1, x.d2 + y.d2, x.cnt + y.cnt);
+    return NodeVal(x.d1 + y.d1, x.d2 + y.d2);
   }
-  inline void g(NodeVal &x, int a) { // this modifies the content of x
+  inline void g(NodeVal &x, int a, int cnt) { // this modifies the content of x
     if (a == 0) return;
-    int size = x.cnt;
-    x.d2 += (sp_d2_type)a*(a*size + 2*x.d1); // d2 += a*a*size + 2*a*d1
-    x.d1 += (sp_d1_type)a*size;
+    x.d2 += (sp_d2_type)a*(a*cnt + 2*x.d1); // d2 += a^2*n + 2*a*d1
+    x.d1 += (sp_d1_type)a*cnt;
   }
   typedef int E;
   typedef NodeVal T;
@@ -28,25 +26,25 @@ namespace FastCorr {
    * @brief Randomized binary search tree with lazy propergation, customized for spearman calculation
    */
   template <typename T, typename E>
-  struct LazyRBSTNode {
-    typename RBSTBase<LazyRBSTNode>::Ptr l, r;
+  struct D2LazyRBSTNode {
+    typename RBSTBase<D2LazyRBSTNode>::Ptr l, r;
     T key, sum;
     E lazy;
     int cnt;
 
-    LazyRBSTNode(const T &t = T(), const E &e = E())
+    D2LazyRBSTNode(const T &t = T(), const E &e = E())
         : l(), r(), key(t), sum(t), lazy(e), cnt(1) {}
   };
 
   //template <typename T, typename E, T (*f)(T, T), T (*g)(T, E), E (*h)(E, E)>
-  struct LazyRBST : RBSTBase<LazyRBSTNode<T, E>> {
-    using Node = LazyRBSTNode<T, E>;
-    using base = RBSTBase<LazyRBSTNode<T, E>>;
+  struct D2LazyRBST : RBSTBase<D2LazyRBSTNode<T, E>> {
+    using Node = D2LazyRBSTNode<T, E>;
+    using base = RBSTBase<D2LazyRBSTNode<T, E>>;
     using base::merge;
     using base::split;
     using typename base::Ptr;
 
-    LazyRBST() = default;
+    D2LazyRBST() = default;
 
     T fold(Ptr &t, int a, int b) {
       auto x = split(t, a);
@@ -85,8 +83,8 @@ namespace FastCorr {
 
     void propagate(Ptr t, const E &x) {
       t->lazy += x;
-      g(t->key, x);
-      g(t->sum, x);
+      g(t->key, x, 1);
+      g(t->sum, x, t->cnt);
     }
   };
 }
