@@ -14,6 +14,19 @@ namespace FastCorr::OfflineCorr {
   // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
   template< class T >
   double kendall_tau(const std::deque< std::pair<T, T> > &vals);
+
+  // Calculating sum[i] t_i*(t_i-1)/2 - this is faster than using std::map
+  template< class T >
+  kd_n2_type offline_nC2_counter(std::vector<T> xs) {
+    std::sort(xs.begin(), xs.end());
+    int ctr_same = 1, n = xs.size();
+    kd_n2_type ret = 0;
+    for (int i=1; i<n; i++) {
+      if (xs[i-1] != xs[i]) ctr_same = 0;
+      ret += ctr_same++;
+    }
+    return ret;
+  };
 }
 
 // ===== Online Algorithms ========================================================== //
@@ -173,11 +186,16 @@ namespace FastCorr::OfflineCorr {
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
 
+    std::vector<T> ys(n);
+    for (int i=0; i<n; i++) ys[i] = sorted[i].second;
+    kd_n2_type n1 = 0, n2 = offline_nC2_counter(ys); // O(nlogn) but faster
+    /*
     std::map<T, int> ctr_Y;
     // O(nlogn)
     for (int i=0; i<n; i++) ctr_Y[sorted[i].second]++;
     kd_n2_type n1 = 0, n2 = 0;
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
+    */
     // the second int is an unique id to allow for duplicate values in tree
     CountingTree< std::pair<T, int> > ctr_tree;
     int head = 0;
@@ -214,6 +232,14 @@ namespace FastCorr::OfflineCorr {
     if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+    /*
+    std::vector<T> xs(n);
+    for (int i=0; i<n; i++) xs[i] = vals[i].first;
+    kd_n2_type n1 = offline_nC2_counter(xs);
+    for (int i=0; i<n; i++) xs[i] = vals[i].second;
+    kd_n2_type n2 = offline_nC2_counter(xs);
+    */
+
     std::map<T, int> ctr_X, ctr_Y;
     // O(nlogn)
     for (int i=0; i<n; i++) ctr_X[vals[i].first]++;

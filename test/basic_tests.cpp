@@ -19,6 +19,10 @@ using namespace FastCorr;
 #define assertmsg(expr, msg) assert(((void)msg, expr))
 
 int LOOP = 3;
+std::chrono::duration<double, std::milli> BENCHMARK_MAX_ALLOWED_MS(3*1000); // 3 sec
+const int BENCHMARK_MINIMUM_TIMES = 1;
+
+// const int MAX_ALLOWED_MS = 3*1000; // 3 sec
 TEST_CASE("test settings") {
   if (getenv("LOOP")) {
     LOOP = stoi(getenv("LOOP"));
@@ -334,7 +338,9 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
   //vector<long long> ds;
   vector<double> rs;
   for (int repeat=0; repeat<3; repeat++) {
+    int loop_counter = 0;
     auto t1 = high_resolution_clock::now();
+
     if (repeat == 0) {
       // O(logN) efficient algorithm
       if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(logN)\n";
@@ -350,7 +356,9 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
       if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(NlogN)\n";
       sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
     }
-    for (int _=0; _<LOOP; _++) {
+    for (int _=0; ; _++) {
+      if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode
+      loop_counter++;
       int rs_counter = 0;
       for (auto p : operations) {
         double x_val = p.second;
@@ -379,10 +387,15 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
         }
       }
       REQUIRE(sp->size() == 0);
+      auto t2 = high_resolution_clock::now();
+      duration<double, std::milli> ms_double = t2 - t1;
+      if (verbose && loop_counter >= BENCHMARK_MINIMUM_TIMES && (t2-t1) > BENCHMARK_MAX_ALLOWED_MS) { // benchmark mode: loop end
+        break;
+      }
     }
     auto t2 = high_resolution_clock::now();
-    duration<double, std::milli> ms_double = (t2 - t1)/LOOP;
-    if (verbose) cout << "average execution time: " << ms_double.count() << "ms\n";
+    duration<double, std::milli> ms_double = (t2 - t1)/loop_counter;
+    if (verbose) cout << "average execution time: " << std::setprecision(2) << fixed << ms_double.count() << "ms (loop="<<loop_counter<<")\n";
   }
 }
 void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bool verbose) {
@@ -395,7 +408,9 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
   MonotonicOnlineCorr::KendallBase<double> *kd;
   vector<double> rs;
   for (int repeat=0; repeat<2; repeat++) {
+    int loop_counter = 0;
     auto t1 = high_resolution_clock::now();
+
     if (repeat == 0) {
       // O(logN) efficient algorithm
       if (verbose) cout << "[MonotonicOnlineCorr::Kendall] O(logN)\n";
@@ -406,7 +421,9 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
       if (verbose) cout << "[MonotonicOnlineCorr::OfflineKendall] O(NlogN)\n";
       kd = new MonotonicOnlineCorr::OfflineKendall<double>();
     }
-    for (int _=0; _<LOOP; _++) {
+    for (int _=0; ; _++) {
+      if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode
+      loop_counter++;
       int rs_counter = 0;
       for (auto p : operations) {
         double x_val = p.second;
@@ -427,10 +444,15 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
         }
       }
       REQUIRE(kd->size() == 0);
+      auto t2 = high_resolution_clock::now();
+      duration<double, std::milli> ms_double = t2 - t1;
+      if (verbose && loop_counter >= BENCHMARK_MINIMUM_TIMES && (t2-t1) > BENCHMARK_MAX_ALLOWED_MS) { // benchmark mode: loop end
+        break;
+      }
     }
     auto t2 = high_resolution_clock::now();
-    duration<double, std::milli> ms_double = (t2 - t1)/LOOP;
-    if (verbose) cout << "average execution time: " << ms_double.count() << "ms\n";
+    duration<double, std::milli> ms_double = (t2 - t1)/loop_counter;
+    if (verbose) cout << "average execution time: " << std::setprecision(2) << fixed << ms_double.count() << "ms (loop="<<loop_counter<<")\n";
   }
 }
 void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbose) {
