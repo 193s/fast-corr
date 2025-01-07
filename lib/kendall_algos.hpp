@@ -17,8 +17,8 @@ namespace FastCorr::OfflineCorr {
 
   // Calculating sum[i] t_i*(t_i-1)/2 - this is faster than using std::map
   template< class T >
-  kd_n2_type offline_nC2_counter(std::vector<T> xs) {
-    std::sort(xs.begin(), xs.end());
+  kd_n2_type offline_nC2_counter(std::vector<T> xs, bool already_sorted=false) {
+    if (!already_sorted) std::sort(xs.begin(), xs.end());
     int ctr_same = 1, n = xs.size();
     kd_n2_type ret = 0;
     for (int i=1; i<n; i++) {
@@ -26,6 +26,24 @@ namespace FastCorr::OfflineCorr {
       ret += ctr_same++;
     }
     return ret;
+  };
+  struct BinaryIndexedTree {
+    int n;
+    std::vector<int> xs;
+    BinaryIndexedTree(int n) : n(n) {
+      xs.resize(n+1);
+    }
+    void add(int i, int v) {
+      for (int x=i+1; x<=n; x+=x&-x) xs[x] += v;
+    }
+    int sum(int i) {
+      int s = 0;
+      for (int x=i+1; x>0; x-=x&-x) s += xs[x];
+      return s;
+    }
+    int sum(int a, int b) {
+      return sum(b) - sum(a-1);
+    }
   };
 }
 
@@ -196,31 +214,28 @@ namespace FastCorr::OfflineCorr {
 
     std::vector<TY> ys(n);
     for (int i=0; i<n; i++) ys[i] = sorted[i].second;
-    kd_n2_type n1 = 0, n2 = FastCorr::OfflineCorr::offline_nC2_counter(ys); // O(nlogn) but faster
-    /*
-    std::map<T, int> ctr_Y;
-    // O(nlogn)
-    for (int i=0; i<n; i++) ctr_Y[sorted[i].second]++;
-    kd_n2_type n1 = 0, n2 = 0;
-    for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
-    */
+    sort(ys.begin(), ys.end()); // O(nlogn)
+    kd_n2_type n1 = 0, n2 = FastCorr::OfflineCorr::offline_nC2_counter(ys, true); // O(n)
+    ys.erase(unique(ys.begin(), ys.end()), ys.end());
+    int H = ys.size(); // H <= n
+    std::vector<int> sorted_cmp(n); // compress TY -> int [0,H)
+    for (int i=0; i<n; i++) {
+      sorted_cmp[i] = std::lower_bound(ys.begin(), ys.end(), sorted[i].second) - ys.begin();
+    }
+
     // the second int is an unique id to allow for duplicate values in tree
-    CountingTree< std::pair<TY, int> > ctr_tree;
+    BinaryIndexedTree bit(H);
     int head = 0;
     for (int i=0; i<n; i++) {
       if (i > 0 && sorted[i-1].first != sorted[i].first) {
         int c = i-head;
         n1 += (kd_n2_type)c*(c-1)/2;
-        for (; head<i; head++) {
-          ctr_tree.insert(std::make_pair(sorted[head].second, head)); // add y
-        }
+        for (; head<i; head++) bit.add(sorted_cmp[head], 1); // add y
         // head = i
       }
-      // K += #{yj < yi}
-      // L += #{yj > yi}
-      TY yi = sorted[i].second;
-      K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logn)
-      L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, n)); // O(logn)
+      int yi = sorted_cmp[i];
+      K += bit.sum(yi-1);    // K += #{yj < yi}
+      L += head-bit.sum(yi); // L += #{yj > yi}
     }
     int last_c = n-head;
     n1 += (kd_n2_type)last_c*(last_c-1)/2;

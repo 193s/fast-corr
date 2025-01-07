@@ -77,16 +77,16 @@ This is nothing new, just a very straightforward set of implementations.
 ```
 ========= SPEARMAN =========
 [MonotonicOnlineCorr::Spearman] O(logN)
-average execution time: 14.69ms (loop=137)
+average execution time: 14.92ms (loop=135)
 [MonotonicOnlineCorr::SpearmanLinear] O(N)
-average execution time: 13.33ms (loop=151)
+average execution time: 13.80ms (loop=145)
 [Offline Spearman] O(NlogN)
-average execution time: 653.98ms (loop=4)
+average execution time: 674.82ms (loop=3)
 ========= KENDALL =========
 [MonotonicOnlineCorr::Kendall] O(logN)
-average execution time: 5.39ms (loop=371)
+average execution time: 5.36ms (loop=374)
 [Offline Kendall] O(NlogN)
-average execution time: 1378.85ms (loop=2)
+average execution time: 1139.17ms (loop=2)
 ```
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
