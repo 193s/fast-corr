@@ -196,7 +196,7 @@ namespace FastCorr::OfflineCorr {
 
     std::vector<TY> ys(n);
     for (int i=0; i<n; i++) ys[i] = sorted[i].second;
-    kd_n2_type n1 = 0, n2 = offline_nC2_counter(ys); // O(nlogn) but faster
+    kd_n2_type n1 = 0, n2 = FastCorr::OfflineCorr::offline_nC2_counter(ys); // O(nlogn) but faster
     /*
     std::map<T, int> ctr_Y;
     // O(nlogn)

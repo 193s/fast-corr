@@ -23,6 +23,20 @@ namespace FastCorr::OfflineCorr {
   sp_d2_type spearman_d(const std::vector< std::pair<TX, TY> > &vals);
   template< class TX, class TY >
   sp_d2_type spearman_d(const std::deque< std::pair<TX, TY> > &vals);
+
+  // Calculating sum[i] t_i*(t_i^2-1) - this is faster than using std::map
+  template< class T >
+  sp_d2_type offline_n3_counter(std::vector<T> xs) {
+    std::sort(xs.begin(), xs.end());
+    int ctr_same = 1, n = xs.size();
+    sp_d2_type ret = 0;
+    for (int i=1; i<n; i++) {
+      if (xs[i-1] != xs[i]) ctr_same = 0;
+      ret += (sp_d2_type)3*ctr_same*(ctr_same+1);
+      ctr_same++;
+    }
+    return ret;
+  };
 }
 // ===== Helper functions =========================================================== //
 
@@ -327,21 +341,11 @@ namespace FastCorr::MonotonicOnlineCorr {
         vals.pop_back();
       }
       size_t size() const { return vals.size(); }
-      /*
-      double spearman_r() const {
-        std::cout << "spearman_r called\n";
-        return FastCorr::OfflineCorr::spearman_r(vals);
-      }
-      */
       sp_d2_type spearman_d() const {
-        //std::cout << "spearman_d called\n";
-        sp_d2_type Gx = 0;
-        std::map<T, int> X_ctr;
-        for (auto &x : vals) {
-          int dup = X_ctr[x.first]++;
-          Gx += (sp_d2_type)3*dup*(dup+1);
-        }
-        SpearmanBase<T>::Gx = Gx;
+        int n = vals.size();
+        std::vector<T> xs(n);
+        for (int i=0; i<n; i++) xs[i] = vals[i].first;
+        SpearmanBase<T>::Gx = FastCorr::OfflineCorr::offline_n3_counter(xs);
         return FastCorr::OfflineCorr::spearman_d(vals);
       }
   };
@@ -358,17 +362,8 @@ namespace FastCorr::OfflineCorr {
     sp_d2_type d = spearman_d(x_vals, y_vals);
 
     // calculate Gx and Gy
-    std::map<TX, int> X_ctr;
-    std::map<TY, int> Y_ctr;
-    sp_d2_type Gx = 0, Gy = 0;
-    for (auto &x : x_vals) {
-      int dup = X_ctr[x]++;
-      Gx += (sp_d2_type)3*dup*(dup+1);
-    }
-    for (auto &y : y_vals) {
-      int dup = Y_ctr[y]++;
-      Gy += (sp_d2_type)3*dup*(dup+1);
-    }
+    sp_d2_type Gx = FastCorr::OfflineCorr::offline_n3_counter(x_vals);
+    sp_d2_type Gy = FastCorr::OfflineCorr::offline_n3_counter(y_vals);
     return spearman_r_from_n_4d_Gx_and_Gy(n, d, Gx, Gy);
   }
   // wrapper for list of pairs

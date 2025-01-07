@@ -54,14 +54,14 @@ The result may contain errors incurred by arhithmetic operations of double datat
 ### OfflineCorr - Offline implementations
 | Function name | Time complexity |
 | ---- | ---- |
-| FastCorr::OfflineCorr::spearman\_r\<T\>  | O(NlogN) |
-| FastCorr::OfflineCorr::kendall\_tau\<T\> | O(NlogN) |
+| FastCorr::OfflineCorr::spearman\_r\<TX, TY\>  | O(NlogN) |
+| FastCorr::OfflineCorr::kendall\_tau\<TX, TY\> | O(NlogN) |
 | FastCorr::OfflineCorr::pearson\_r        | O(N)     |
 
 This is nothing new, just a very straightforward set of implementations.  
-- `double FastCorr::OfflineCorr::spearman_r<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
-- `double FastCorr::OfflineCorr::kendall_tau<T>(const vector<T> &x_vals, const vector<T> &y_vals)`
-- `double FastCorr::OfflineCorr::pearson_r(double x_vals, double y_vals)`
+- `double FastCorr::OfflineCorr::spearman_r<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
+- `double FastCorr::OfflineCorr::kendall_tau<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
+- `double FastCorr::OfflineCorr::pearson_r(const vector<double> &x_vals, const vector<double> &y_vals)`
 
 ----------------
 
