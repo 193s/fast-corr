@@ -207,7 +207,7 @@ namespace FastCorr::OfflineCorr {
   // internal function
   template< class TX, class TY >
   double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted) {
-    int n = sorted.size();
+    const int n = sorted.size();
     if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
@@ -215,30 +215,36 @@ namespace FastCorr::OfflineCorr {
     std::vector<TY> ys(n);
     for (int i=0; i<n; i++) ys[i] = sorted[i].second;
     sort(ys.begin(), ys.end()); // O(nlogn)
-    kd_n2_type n1 = 0, n2 = FastCorr::OfflineCorr::offline_nC2_counter(ys, true); // O(n)
     ys.erase(unique(ys.begin(), ys.end()), ys.end());
-    int H = ys.size(); // H <= n
+    const int H = ys.size(); // H <= n
     std::vector<int> sorted_cmp(n); // compress TY -> int [0,H)
     for (int i=0; i<n; i++) {
       sorted_cmp[i] = std::lower_bound(ys.begin(), ys.end(), sorted[i].second) - ys.begin();
     }
+    kd_n2_type n1 = 0, n2 = 0;
 
-    // the second int is an unique id to allow for duplicate values in tree
     BinaryIndexedTree bit(H);
+    std::vector<int> ctr(H, 0);
     int head = 0;
     for (int i=0; i<n; i++) {
       if (i > 0 && sorted[i-1].first != sorted[i].first) {
         int c = i-head;
         n1 += (kd_n2_type)c*(c-1)/2;
-        for (; head<i; head++) bit.add(sorted_cmp[head], 1); // add y
+        for (; head<i; head++) {
+          int yi = sorted_cmp[head];
+          bit.add(yi, 1); // add y
+          ctr[yi]++;
+        }
         // head = i
       }
-      int yi = sorted_cmp[i];
-      K += bit.sum(yi-1);    // K += #{yj < yi}
-      L += head-bit.sum(yi); // L += #{yj > yi}
+      int yi = sorted_cmp[i], s = bit.sum(yi-1);
+      K += s;              // K += #{yj < yi}
+      L += head-s-ctr[yi]; // L += #{yj > yi}
     }
     int last_c = n-head;
     n1 += (kd_n2_type)last_c*(last_c-1)/2;
+    for (int i=0; i<H; i++) n2 += (kd_n2_type)ctr[i]*(ctr[i]-1);
+    n2 /= 2;
 
     if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
     // return (double)(K-L) / (double)n0; // tau-a
