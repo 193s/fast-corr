@@ -57,12 +57,12 @@ void internal_random_op_test(int Q, bool duplicate_test) {
 }
 
 void internal_sequential_test(int T, int N, bool duplicate_test, bool VERBOSE) {
-  if (VERBOSE) cout << "T=" << T << ", N="<<N<<": iteration*"<<LOOP<<"\n";
   int seed = time(NULL);
   vector<double> A = generate_random_double_sequence(T, seed, duplicate_test);
   REQUIRE(duplicate_test == contains_duplicates(A));
   if (duplicate_test) cout << "testing with random arrays with duplicate values... seed=" << seed << "\n";
   else cout << "testing with random arrays without duplicate values... seed=" << seed << "\n";
+  if (VERBOSE) cout << "T=" << T << ", N="<<N<<"\n";
   vector< pair<OPERATION_TYPE, double> > operations;
   // sequencial operation test
   for (int i=0; i<N-1; i++) operations.push_back(make_pair(OPERATION_TYPE::PUSH_BACK, A[i])); // add the first N-1 items

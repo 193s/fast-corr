@@ -212,15 +212,17 @@ namespace FastCorr::OfflineCorr {
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
 
-    std::vector<TY> ys(n);
-    for (int i=0; i<n; i++) ys[i] = sorted[i].second;
+    std::vector<std::pair<TY, int>> ys(n);
+    for (int i=0; i<n; i++) ys[i] = std::make_pair(sorted[i].second, i);
     sort(ys.begin(), ys.end()); // O(nlogn)
-    ys.erase(unique(ys.begin(), ys.end()), ys.end());
-    const int H = ys.size(); // H <= n
+
     std::vector<int> sorted_cmp(n); // compress TY -> int [0,H)
+    int H = 0;
     for (int i=0; i<n; i++) {
-      sorted_cmp[i] = std::lower_bound(ys.begin(), ys.end(), sorted[i].second) - ys.begin();
+      if (i > 0 && ys[i-1].first != ys[i].first) H++;
+      sorted_cmp[ys[i].second] = H;
     }
+    H++;
     kd_n2_type n1 = 0, n2 = 0;
 
     BinaryIndexedTree bit(H);
