@@ -1,37 +1,13 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../lib/doctest.h"
+#include "./test_base.hpp"
 
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <limits>
-#include <chrono>
-#include <random>
-#include <ctime>
-#include <cassert>
-#include <iterator>
-using namespace std;
-
-#include "../lib/spearman_algos.hpp"
-#include "../lib/kendall_algos.hpp"
-#include "../lib/pearson_algos.hpp"
-using namespace FastCorr;
-#define assertmsg(expr, msg) assert(((void)msg, expr))
-
-int LOOP = 3;
-std::chrono::duration<double, std::milli> BENCHMARK_MAX_ALLOWED_MS(3*1000); // 3 sec
-const int BENCHMARK_MINIMUM_TIMES = 1;
-
-// const int MAX_ALLOWED_MS = 3*1000; // 3 sec
 TEST_CASE("test settings") {
   if (getenv("LOOP")) {
     LOOP = stoi(getenv("LOOP"));
     MESSAGE("env LOOP specified: LOOP = ", LOOP, " (default=3)");
   }
 }
-
-const double EPS = 1e-9;
-enum class OPERATION_TYPE { PUSH_FRONT, PUSH_BACK, POP_FRONT, POP_BACK, CALCULATE_R };
 
 TEST_CASE("OnlineCorr::Pearson basic testing") {
   vector<double> xs, ys;
@@ -95,61 +71,6 @@ TEST_CASE("OnlineCorr::Pearson with a lot of operations") {
   }
 }
 
-
-// duplicate check in O(NlogN)
-template< class T >
-bool contains_duplicates(vector<T> &ret) {
-  set<T> s;
-  for (T x : ret) {
-    if (s.find(x) != s.end()) return true;
-    s.insert(x);
-  }
-  return false;
-}
-vector<double> generate_random_double_sequence(int T, int seed, bool duplicate) {
-  vector<double> A(T);
-  mt19937 mt(seed);
-  for (int i=0; i<T; i++) A[i] = mt()/100000.0;
-  if (duplicate) {
-    for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
-    shuffle(A.begin(), A.end(), mt);
-  }
-  else {
-    if (contains_duplicates(A)) {
-      return generate_random_double_sequence(T, seed+1, duplicate); // re-generate with different seeds
-    }
-  }
-  return A;
-}
-vector<int> generate_random_int_sequence(int T, int seed, bool duplicate) {
-  vector<int> A(T);
-  mt19937 mt(seed);
-  for (int i=0; i<T; i++) A[i] = mt();
-  if (duplicate) {
-    for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
-    shuffle(A.begin(), A.end(), mt);
-  }
-  else {
-    if (contains_duplicates(A)) {
-      return generate_random_int_sequence(T, seed+1, duplicate); // re-generate with different seeds
-    }
-  }
-  return A;
-}
-
-int system_exec(string cmd_str) {
-  char cmd[1000];
-  strcpy(cmd, cmd_str.c_str());
-  return system(cmd);
-}
-
-template< class T >
-string internal_stringify(vector<T> x) {
-  stringstream result;
-  copy(x.begin(), x.end(), ostream_iterator<T>(result, ","));
-  return "["+result.str()+"]";
-}
-
 TEST_CASE("check results with Python's scipy.stats") {
   //string python_cmd = "python3";
   if (!getenv("PYTHON_CMD")) {
@@ -210,20 +131,6 @@ TEST_CASE("check results with Python's scipy.stats") {
 
   }
 }
-bool assert_eq(vector<int> x, vector<int> y) {
-  assertmsg(x.size() == y.size(), "assertion failed: size does not match");
-  for (int i=0; i<(int)x.size(); i++) {
-    assertmsg(x[i] == y[i], "assertion failed");
-    if (x[i] != y[i]) {
-      cout<<"x={";for(int i:x)cout<<i<<",";cout<<"}, y={";for(int i:y)cout<<i<<",";cout<<"}\n";
-      cout <<"x["<<i<<"]="<<x[i]<<", y["<<i<<"]="<<y[i]<<"\n";
-      cout << "assertion failed\n";
-      exit(1);
-    }
-  }
-  return true;
-}
-
 // tests on helper functions
 TEST_CASE("testing helper functions") {
   // vector<int> convert_array_to_rank(vector<T> arr)
@@ -318,144 +225,4 @@ TEST_CASE("kendall basic testing") {
       }
     }
   }
-}
-
-void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool VERBOSE); // default: verbose=true
-void internal_test(vector< pair<OPERATION_TYPE, double> > operations) { internal_test(operations, true); };
-
-void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, bool verbose) {
-  // required for performance measurement
-  using std::chrono::high_resolution_clock;
-  using std::chrono::duration_cast;
-  using std::chrono::duration;
-  using std::chrono::milliseconds;
-
-  if (verbose) cout << "========= SPEARMAN =========\n";
-  MonotonicOnlineCorr::SpearmanBase<double> *sp;
-  //imp_list.push_back(*(new MonotonicOnlineCorr::Spearman<double>()));
-  //  new MonotonicOnlineCorr::SpearmanLinear<double>(), new OfflineSpearmanForBenchmark<double>(), };
-
-  //vector<long long> ds;
-  vector<double> rs;
-  for (int repeat=0; repeat<3; repeat++) {
-    int loop_counter = 0;
-    auto t1 = high_resolution_clock::now();
-
-    if (repeat == 0) {
-      // O(logN) efficient algorithm
-      if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(logN)\n";
-      sp = new MonotonicOnlineCorr::Spearman<double>();
-    }
-    else if (repeat == 1) {
-      // O(N) insert sort implementation
-      if (verbose) cout << "[MonotonicOnlineCorr::SpearmanLinear] O(N)\n";
-      sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
-    }
-    else {
-      // O(NlogN) straight forward implementation
-      if (verbose) cout << "[Offline Spearman] O(NlogN)\n";
-      sp = new MonotonicOnlineCorr::OfflineSpearmanForBenchmark<double>();
-    }
-    for (int _=0; ; _++) {
-      if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode
-      loop_counter++;
-      int rs_counter = 0;
-      for (auto p : operations) {
-        double x_val = p.second;
-        switch (p.first) {
-          case OPERATION_TYPE::PUSH_FRONT: sp->push_front(x_val); break;
-          case OPERATION_TYPE::PUSH_BACK:  sp->push_back(x_val);  break;
-          case OPERATION_TYPE::POP_FRONT:  sp->pop_front();       break;
-          case OPERATION_TYPE::POP_BACK:   sp->pop_back();        break;
-          case OPERATION_TYPE::CALCULATE_R:
-            double r = sp->spearman_r();
-            if (_ == 0 && repeat == 0) rs.push_back(r);
-            else if (abs(r - rs[rs_counter]) > EPS) {
-              cout << "verify error: (out) r="<<rs[rs_counter]<<" != (correct) " << r << endl;
-              REQUIRE(abs(r - rs[rs_counter]) <= EPS);
-            }
-            rs_counter++;
-            /*
-            long long d = sp->spearman_d();
-            if (_ == 0 && repeat == 0) ds.push_back(d);
-            else if (d != ds[i-(N-1)]) {
-              cout << "verify error: (out) d="<<ds[i-(N-1)]<<" != (correct) "<<d<< endl;
-              exit(1);
-            }
-            */
-            break;
-        }
-      }
-      REQUIRE(sp->size() == 0);
-      auto t2 = high_resolution_clock::now();
-      duration<double, std::milli> ms_double = t2 - t1;
-      if (verbose && loop_counter >= BENCHMARK_MINIMUM_TIMES && (t2-t1) > BENCHMARK_MAX_ALLOWED_MS) { // benchmark mode: loop end
-        break;
-      }
-    }
-    auto t2 = high_resolution_clock::now();
-    duration<double, std::milli> ms_double = (t2 - t1)/loop_counter;
-    if (verbose) cout << "average execution time: " << std::setprecision(2) << fixed << ms_double.count() << "ms (loop="<<loop_counter<<")\n";
-  }
-}
-void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bool verbose) {
-  // required for performance measurement
-  using std::chrono::high_resolution_clock;
-  using std::chrono::duration_cast;
-  using std::chrono::duration;
-  using std::chrono::milliseconds;
-  if (verbose) cout << "========= KENDALL =========\n";
-  MonotonicOnlineCorr::KendallBase<double> *kd;
-  vector<double> rs;
-  for (int repeat=0; repeat<2; repeat++) {
-    int loop_counter = 0;
-    auto t1 = high_resolution_clock::now();
-
-    if (repeat == 0) {
-      // O(logN) efficient algorithm
-      if (verbose) cout << "[MonotonicOnlineCorr::Kendall] O(logN)\n";
-      kd = new MonotonicOnlineCorr::Kendall<double>();
-    }
-    else {
-      // O(NlogN) offline implementation
-      if (verbose) cout << "[Offline Kendall] O(NlogN)\n";
-      kd = new MonotonicOnlineCorr::OfflineKendallForBenchmark<double>();
-    }
-    for (int _=0; ; _++) {
-      if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode
-      loop_counter++;
-      int rs_counter = 0;
-      for (auto p : operations) {
-        double x_val = p.second;
-        switch (p.first) {
-          case OPERATION_TYPE::PUSH_FRONT: kd->push_front(x_val); break;
-          case OPERATION_TYPE::PUSH_BACK:  kd->push_back(x_val);  break;
-          case OPERATION_TYPE::POP_FRONT:  kd->pop_front();       break;
-          case OPERATION_TYPE::POP_BACK:   kd->pop_back();        break;
-          case OPERATION_TYPE::CALCULATE_R:
-            double r = kd->kendall_tau();
-            if (_ == 0 && repeat == 0) rs.push_back(r);
-            else if (abs(r - rs[rs_counter]) > EPS) {
-              cout << "verify error: (out) r="<<rs[rs_counter]<<" != (correct) " << r << endl;
-              REQUIRE(abs(r - rs[rs_counter]) <= EPS);
-            }
-            rs_counter++;
-            break;
-        }
-      }
-      REQUIRE(kd->size() == 0);
-      auto t2 = high_resolution_clock::now();
-      duration<double, std::milli> ms_double = t2 - t1;
-      if (verbose && loop_counter >= BENCHMARK_MINIMUM_TIMES && (t2-t1) > BENCHMARK_MAX_ALLOWED_MS) { // benchmark mode: loop end
-        break;
-      }
-    }
-    auto t2 = high_resolution_clock::now();
-    duration<double, std::milli> ms_double = (t2 - t1)/loop_counter;
-    if (verbose) cout << "average execution time: " << std::setprecision(2) << fixed << ms_double.count() << "ms (loop="<<loop_counter<<")\n";
-  }
-}
-void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbose) {
-  internal_test_spearman(operations, verbose);
-  internal_test_kendall(operations, verbose);
 }

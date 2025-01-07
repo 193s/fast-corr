@@ -2,10 +2,10 @@ C_COMPILER ?= g++-14
 all: ./basic_tests ./benchmark ./sample
 LIB=lib/rbst_base.hpp lib/lazy_rbst.hpp lib/fast_corr_base.hpp lib/spearman_algos.hpp lib/kendall_algos.hpp lib/pearson_algos.hpp
 
-./basic_tests: $(LIB) test/basic_tests.cpp
+./basic_tests: $(LIB) test/basic_tests.cpp test/test_base.hpp
 	$(C_COMPILER) test/basic_tests.cpp -O3 -Wall -o basic_tests
 
-./benchmark: $(LIB) test/basic_tests.cpp test/benchmark.cpp
+./benchmark: $(LIB) test/benchmark.cpp test/test_base.hpp
 	$(C_COMPILER) test/benchmark.cpp -O3 -Wall -o benchmark
 
 ./sample: $(LIB) sample.cpp

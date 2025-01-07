@@ -17,9 +17,9 @@ jobs:
       run: C_COMPILER='g++ --std=c++14' make compile_test
     - name: make all
       run: C_COMPILER='g++ --std=c++14' make all
+    - name: benchmark
+      run: ./benchmark
     - name: sample test
       run: ./sample -d
     - name: basic_tests
       run: ./basic_tests -d
-    - name: benchmark
-      run: ./benchmark -d

@@ -73,6 +73,21 @@ This is nothing new, just a very straightforward set of implementations.
 
 ### benchmark:
 `make benchmark && ./benchmark`  
+
+```
+========= SPEARMAN =========
+[MonotonicOnlineCorr::Spearman] O(logN)
+average execution time: 14.69ms (loop=137)
+[MonotonicOnlineCorr::SpearmanLinear] O(N)
+average execution time: 13.33ms (loop=151)
+[Offline Spearman] O(NlogN)
+average execution time: 653.98ms (loop=4)
+========= KENDALL =========
+[MonotonicOnlineCorr::Kendall] O(logN)
+average execution time: 5.39ms (loop=371)
+[Offline Kendall] O(NlogN)
+average execution time: 1378.85ms (loop=2)
+```
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
 - `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000

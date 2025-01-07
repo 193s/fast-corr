@@ -1,17 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../lib/doctest.h"
-#include "../lib/spearman_algos.hpp"
-#include "../lib/kendall_algos.hpp"
-#include "basic_tests.cpp"
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <limits>
-#include <chrono>
-#include <random>
-#include <ctime>
-#include <set>
-using namespace std;
+#include "./test_base.hpp"
 
 void internal_sequential_test(int T, int N, bool duplicate_test, bool VERBOSE);
 void internal_random_op_test(int Q, bool duplicate_test);
