@@ -71,7 +71,11 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         K -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
         L -= num_lower;
-        n1 -= --ctr_X[x_val];
+        // equivalent to n1 -= --ctr_X[x_val]
+        int tmp = ctr_X[x_val] - 1;
+        n1 -= tmp;
+        if (tmp == 0) ctr_X.erase(x_val);
+        else ctr_X[x_val] = tmp;
       }
       void push_front(const T &x_val) {
         vals.push_front(std::make_pair(x_val, --min_y_ctr));
@@ -90,7 +94,11 @@ namespace FastCorr::MonotonicOnlineCorr {
 
         K -= num_lower;
         L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
-        n1 -= --ctr_X[x_val];
+        // equivalent to n1 -= --ctr_X[x_val]
+        int tmp = ctr_X[x_val] - 1;
+        n1 -= tmp;
+        if (tmp == 0) ctr_X.erase(x_val);
+        else ctr_X[x_val] = tmp;
       }
       double kendall_tau() const {
         int N = vals.size();
