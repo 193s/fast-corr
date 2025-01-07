@@ -242,7 +242,7 @@ TEST_CASE("spearman basic testing") {
     for (int repeat=0; repeat<3; repeat++) {
       if (repeat == 0) sp = new MonotonicOnlineCorr::Spearman<double>();
       else if (repeat == 1) sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
-      else sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
+      else sp = new MonotonicOnlineCorr::OfflineSpearmanForBenchmark<double>();
       REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
       sp->push_back(0);
       REQUIRE(isnan(sp->spearman_r())); // spearman({0}) = nan
@@ -256,7 +256,7 @@ TEST_CASE("spearman basic testing") {
     for (int repeat=0; repeat<3; repeat++) {
       if (repeat == 0) sp = new MonotonicOnlineCorr::Spearman<double>();
       else if (repeat == 1) sp = new MonotonicOnlineCorr::SpearmanLinear<double>();
-      else sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
+      else sp = new MonotonicOnlineCorr::OfflineSpearmanForBenchmark<double>();
 
       REQUIRE(isnan(sp->spearman_r())); // spearman({}) = nan
       sp->push_back(0);
@@ -284,7 +284,7 @@ TEST_CASE("kendall basic testing") {
   SUBCASE("<=2") {
     for (int repeat=0; repeat<3; repeat++) {
       if (repeat == 0) kd = new MonotonicOnlineCorr::Kendall<double>();
-      else kd = new MonotonicOnlineCorr::OfflineKendall<double>();
+      else kd = new MonotonicOnlineCorr::OfflineKendallForBenchmark<double>();
       REQUIRE(isnan(kd->kendall_tau())); // spearman({}) = nan
       kd->push_back(0);
       REQUIRE(isnan(kd->kendall_tau())); // spearman({0}) = nan
@@ -297,7 +297,7 @@ TEST_CASE("kendall basic testing") {
   SUBCASE("N=125") {
     for (int repeat=0; repeat<2; repeat++) {
       if (repeat == 0) kd = new MonotonicOnlineCorr::Kendall<double>();
-      else kd = new MonotonicOnlineCorr::OfflineKendall<double>();
+      else kd = new MonotonicOnlineCorr::OfflineKendallForBenchmark<double>();
 
       REQUIRE(isnan(kd->kendall_tau())); // kendall({}) = nan
       kd->push_back(0);
@@ -333,7 +333,7 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
   if (verbose) cout << "========= SPEARMAN =========\n";
   MonotonicOnlineCorr::SpearmanBase<double> *sp;
   //imp_list.push_back(*(new MonotonicOnlineCorr::Spearman<double>()));
-  //  new MonotonicOnlineCorr::SpearmanLinear<double>(), new OfflineSpearman<double>(), };
+  //  new MonotonicOnlineCorr::SpearmanLinear<double>(), new OfflineSpearmanForBenchmark<double>(), };
 
   //vector<long long> ds;
   vector<double> rs;
@@ -353,8 +353,8 @@ void internal_test_spearman(vector< pair<OPERATION_TYPE, double> > operations, b
     }
     else {
       // O(NlogN) straight forward implementation
-      if (verbose) cout << "[MonotonicOnlineCorr::Spearman] O(NlogN)\n";
-      sp = new MonotonicOnlineCorr::OfflineSpearman<double>();
+      if (verbose) cout << "[Offline Spearman] O(NlogN)\n";
+      sp = new MonotonicOnlineCorr::OfflineSpearmanForBenchmark<double>();
     }
     for (int _=0; ; _++) {
       if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode
@@ -418,8 +418,8 @@ void internal_test_kendall(vector< pair<OPERATION_TYPE, double> > operations, bo
     }
     else {
       // O(NlogN) offline implementation
-      if (verbose) cout << "[MonotonicOnlineCorr::OfflineKendall] O(NlogN)\n";
-      kd = new MonotonicOnlineCorr::OfflineKendall<double>();
+      if (verbose) cout << "[Offline Kendall] O(NlogN)\n";
+      kd = new MonotonicOnlineCorr::OfflineKendallForBenchmark<double>();
     }
     for (int _=0; ; _++) {
       if (!verbose && _ == LOOP) break; // verbose=True <=> benchmark mode

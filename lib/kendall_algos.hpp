@@ -9,11 +9,11 @@
 
 namespace FastCorr::OfflineCorr {
   // O(NlogN) efficient offline algorithm (tau-b)
-  template< class T >
-  double kendall_tau(const std::vector< std::pair<T, T> > &vals);
+  template< class TX, class TY >
+  double kendall_tau(const std::vector< std::pair<TX, TY> > &vals);
   // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
-  template< class T >
-  double kendall_tau(const std::deque< std::pair<T, T> > &vals);
+  template< class TX, class TY >
+  double kendall_tau(const std::deque< std::pair<TX, TY> > &vals);
 
   // Calculating sum[i] t_i*(t_i-1)/2 - this is faster than using std::map
   template< class T >
@@ -111,13 +111,13 @@ namespace FastCorr::MonotonicOnlineCorr {
   };
 
   template< class T >
-  class OfflineKendall : public KendallBase<T> {
+  class OfflineKendallForBenchmark : public KendallBase<T> {
     int min_y_ctr = 0, max_y_ctr = 0;
     std::deque<std::pair<T, T> > vals;
 
     public:
-      OfflineKendall() {}
-      OfflineKendall(const std::vector<T> &x_vals) {
+      OfflineKendallForBenchmark() {}
+      OfflineKendallForBenchmark(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
       void push_back(const T &x_val) {
@@ -159,42 +159,42 @@ namespace FastCorr::OnlineCorr {
 
 namespace FastCorr::OfflineCorr {
   // internal function
-  template< class T >
-  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted);
+  template< class TX, class TY >
+  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted);
 
   // O(NlogN) efficient offline algorithm (tau-b)
-  template< class T >
-  double kendall_tau(const std::vector< std::pair<T, T> > &vals) {
-    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+  template< class TX, class TY >
+  double kendall_tau(const std::vector< std::pair<TX, TY> > &vals) {
+    std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
     std::sort(sorted.begin(), sorted.end()); // O(nlogn)
-    return internal_kendall_tau_on_sorted_pairs<T>(sorted);
+    return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
   }
   // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
-  template< class T >
-  double kendall_tau(const std::deque< std::pair<T, T> > &vals) {
-    std::vector< std::pair<T, T> > sorted(vals.begin(), vals.end());
+  template< class TX, class TY >
+  double kendall_tau(const std::deque< std::pair<TX, TY> > &vals) {
+    std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
     std::sort(sorted.begin(), sorted.end()); // O(nlogn)
-    return internal_kendall_tau_on_sorted_pairs<T>(sorted);
+    return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
   }
   // wrapper for two vectors
-  template< class T >
-  double kendall_tau(const std::vector<T> &x_vals, const std::vector<T> &y_vals) {
+  template< class TX, class TY >
+  double kendall_tau(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
     assert(x_vals.size() == y_vals.size());
     int n = x_vals.size();
-    std::vector<std::pair<T, T> > vals;
+    std::vector<std::pair<TX, TY> > vals;
     for (int i=0; i<n; i++) vals.push_back(std::make_pair(x_vals[i], y_vals[i]));
     return kendall_tau(vals);
   }
 
   // internal function
-  template< class T >
-  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<T, T> > &sorted) {
+  template< class TX, class TY >
+  double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted) {
     int n = sorted.size();
     if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
     const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
 
-    std::vector<T> ys(n);
+    std::vector<TY> ys(n);
     for (int i=0; i<n; i++) ys[i] = sorted[i].second;
     kd_n2_type n1 = 0, n2 = offline_nC2_counter(ys); // O(nlogn) but faster
     /*
@@ -205,7 +205,7 @@ namespace FastCorr::OfflineCorr {
     for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
     */
     // the second int is an unique id to allow for duplicate values in tree
-    CountingTree< std::pair<T, int> > ctr_tree;
+    CountingTree< std::pair<TY, int> > ctr_tree;
     int head = 0;
     for (int i=0; i<n; i++) {
       if (i > 0 && sorted[i-1].first != sorted[i].first) {
@@ -218,7 +218,7 @@ namespace FastCorr::OfflineCorr {
       }
       // K += #{yj < yi}
       // L += #{yj > yi}
-      T yi = sorted[i].second;
+      TY yi = sorted[i].second;
       K += ctr_tree.order_of_key(std::make_pair(yi, -1)); // O(logn)
       L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(yi, n)); // O(logn)
     }
@@ -234,8 +234,8 @@ namespace FastCorr::OfflineCorr {
   }
 
   // O(N^2) implementation for validation (tau-b)
-  template< class T >
-  double slow_kendall_tau(const std::deque<std::pair<T, T> > &vals) {
+  template< class TX, class TY >
+  double slow_kendall_tau(const std::deque<std::pair<TX, TY> > &vals) {
     int n = vals.size();
     if (n <= 1) return NAN;
     kd_n2_type K = 0, L = 0;
@@ -248,7 +248,8 @@ namespace FastCorr::OfflineCorr {
     kd_n2_type n2 = offline_nC2_counter(xs);
     */
 
-    std::map<T, int> ctr_X, ctr_Y;
+    std::map<TX, int> ctr_X;
+    std::map<TY, int> ctr_Y;
     // O(nlogn)
     for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
     for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
@@ -258,8 +259,8 @@ namespace FastCorr::OfflineCorr {
     // O(N^2)
     for (int i=0; i<n; i++) {
       for (int j=0; j<i; j++) {
-        T xi = vals[i].first,  xj = vals[j].first;
-        T yi = vals[i].second, yj = vals[j].second;
+        TX xi = vals[i].first,  xj = vals[j].first;
+        TY yi = vals[i].second, yj = vals[j].second;
         if ((xi < xj && yi < yj) || (xi > xj && yi > yj)) K++;
         if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
       }

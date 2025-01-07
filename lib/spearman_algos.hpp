@@ -10,10 +10,19 @@
 
 namespace FastCorr::OfflineCorr {
   // O(NlogN) offline algorithm (spearman-r)
-  template< class T >
-  double spearman_r(const std::vector< std::pair<T, T> > &vals);
-  template< class T >
-  double spearman_r(const std::vector<T> &x_vals, const std::vector<T> &y_vals);
+  template< class TX, class TY >
+  double spearman_r(const std::vector< std::pair<TX, TY> > &vals);
+  template< class TX, class TY >
+  double spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals);
+  template< class TX, class TY >
+  double spearman_r(const std::deque< std::pair<TX, TY> > &vals);
+
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals);
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::vector< std::pair<TX, TY> > &vals);
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::deque< std::pair<TX, TY> > &vals);
 }
 // ===== Helper functions =========================================================== //
 
@@ -94,7 +103,7 @@ namespace FastCorr::MonotonicOnlineCorr {
       }
       double r() const { return spearman_r(); } // r() is an alias for spearman_r()
     protected:
-      sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
+      mutable sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
       // Gy = 0 under monotonic constraints
   };
   //  < class D, class L, D (*f)(D, D), D (*g)(D, L), L (*h)(L, L), L (*p)(L, int) >
@@ -293,82 +302,64 @@ namespace FastCorr::MonotonicOnlineCorr {
    * adding/removing a value requires O(NlogN) time complexity and O(M) space complexity
    */
   template< class T >
-  class OfflineSpearman : public SpearmanBase<T> {
-    int N = 0;
-    std::deque<T> X_val;
-    std::map<T, int> duplicate_counter;
-    // internal function: returns the number of existing pairs with the same x-values (>=0)
-    inline int _add_value(const T &x_val) {
-      int dup = duplicate_counter[x_val]++;
-      SpearmanBase<T>::Gx += (sp_d2_type)3*dup*(dup+1);
-      return dup;
-    }
-    // internal function: returns the number of remaining pairs with the same x-values (excluding the pair being erased, >=0)
-    inline int _remove_value(const T &x_val) {
-      int dup = --duplicate_counter[x_val]; //assert dup>=0
-      if (dup == 0) duplicate_counter.erase(x_val);
-      SpearmanBase<T>::Gx -= (sp_d2_type)3*dup*(dup+1);
-      return dup;
-    }
+  class OfflineSpearmanForBenchmark : public SpearmanBase<T> {
+    int min_y_ctr = 0, max_y_ctr = 0;
+    std::deque<std::pair<T, int> > vals;
+
     public:
-      OfflineSpearman() {}
-      OfflineSpearman(const std::vector<T> &x_vals) {
+      OfflineSpearmanForBenchmark() {}
+      OfflineSpearmanForBenchmark(const std::vector<T> &x_vals) {
         for (auto &x : x_vals) push_back(x);
       }
-      // add a new element
       void push_back(const T &x_val) {
-        _add_value(x_val);
-        N += 1;
-        X_val.push_back(x_val);
+        vals.push_back(std::make_pair(x_val, max_y_ctr++));
       }
-      // add a new element
       void push_front(const T &x_val) {
-        _add_value(x_val);
-        N += 1;
-        X_val.push_front(x_val);
+        vals.push_front(std::make_pair(x_val, --min_y_ctr));
       }
-      // remove an oldest element
       void pop_front() {
-        T x_val = X_val.front();
-        _remove_value(x_val);
-        N -= 1;
-        X_val.pop_front();
+        // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
+        min_y_ctr++;
+        vals.pop_front();
       }
-      // remove an newest element
       void pop_back() {
-        T x_val = X_val.back();
-        _remove_value(x_val);
-        N -= 1;
-        X_val.pop_back();
+        max_y_ctr--;
+        vals.pop_back();
       }
+      size_t size() const { return vals.size(); }
+      /*
+      double spearman_r() const {
+        std::cout << "spearman_r called\n";
+        return FastCorr::OfflineCorr::spearman_r(vals);
+      }
+      */
       sp_d2_type spearman_d() const {
-        int n = X_val.size();
-        std::vector<int> X = convert_array_to_rank(std::vector<T>(X_val.begin(), X_val.end()));
-        std::vector<int> Y(n);
-        for (int i=0; i<n; i++) Y[i] = (i+1)*2; // *2
-        sp_d2_type d = 0;
-        for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
-        return d;
+        //std::cout << "spearman_d called\n";
+        sp_d2_type Gx = 0;
+        std::map<T, int> X_ctr;
+        for (auto &x : vals) {
+          int dup = X_ctr[x.first]++;
+          Gx += (sp_d2_type)3*dup*(dup+1);
+        }
+        SpearmanBase<T>::Gx = Gx;
+        return FastCorr::OfflineCorr::spearman_d(vals);
       }
-      size_t size() const { return N; }
   };
 }
 
 // ===== Offline Algorithms ========================================================= //
 
 namespace FastCorr::OfflineCorr {
+
   // O(NlogN) spearman algorithm
-  template< class T >
-  double spearman_r(const std::vector<T> &x_vals, const std::vector<T> &y_vals) {
+  template< class TX, class TY >
+  double spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
     int n = x_vals.size();
-    // calculate ranks and 4d
-    std::vector<int> X = convert_array_to_rank(x_vals);
-    std::vector<int> Y = convert_array_to_rank(y_vals);
-    sp_d2_type d = 0;
-    for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
+    sp_d2_type d = spearman_d(x_vals, y_vals);
 
     // calculate Gx and Gy
-    std::map<T, int> X_ctr, Y_ctr;
+    std::map<TX, int> X_ctr;
+    std::map<TY, int> Y_ctr;
     sp_d2_type Gx = 0, Gy = 0;
     for (auto &x : x_vals) {
       int dup = X_ctr[x]++;
@@ -380,13 +371,48 @@ namespace FastCorr::OfflineCorr {
     }
     return spearman_r_from_n_4d_Gx_and_Gy(n, d, Gx, Gy);
   }
-  template< class T >
-  double spearman_r(const std::vector< std::pair<T, T> > &vals) {
+  // wrapper for list of pairs
+  template< class TX, class TY >
+  double spearman_r(const std::vector< std::pair<TX, TY> > &vals) {
     int n = vals.size();
-
-    std::vector<int> x_vals(n), y_vals(n);
+    std::vector<TX> x_vals(n);
+    std::vector<TY> y_vals(n);
     for (int i=0; i<n; i++) x_vals[i] = vals[i].first;
     for (int i=0; i<n; i++) y_vals[i] = vals[i].second;
     return spearman_r(x_vals, y_vals);
+  }
+  // O(NlogN) offline spearman: wrapper for deque
+  template< class TX, class TY >
+  double spearman_r(const std::deque< std::pair<TX, TY> > &vals) {
+    std::vector< std::pair<TX, TY> > vals2(vals.begin(), vals.end());
+    return spearman_r(vals2);
+  }
+
+  // spearman_d (used by spearman_r)
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
+    int n = x_vals.size();
+    // calculate ranks and 4d
+    std::vector<int> X = convert_array_to_rank(x_vals);
+    std::vector<int> Y = convert_array_to_rank(y_vals);
+    sp_d2_type d = 0;
+    for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
+    return d;
+  }
+  // wrapper for list of pairs
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::vector< std::pair<TX, TY> > &vals) {
+    int n = vals.size();
+    std::vector<TX> x_vals(n);
+    std::vector<TY> y_vals(n);
+    for (int i=0; i<n; i++) x_vals[i] = vals[i].first;
+    for (int i=0; i<n; i++) y_vals[i] = vals[i].second;
+    return spearman_d(x_vals, y_vals);
+  }
+  // wrapper for deque
+  template< class TX, class TY >
+  sp_d2_type spearman_d(const std::deque< std::pair<TX, TY> > &vals) {
+    std::vector< std::pair<TX, TY> > vals2(vals.begin(), vals.end());
+    return spearman_d(vals2);
   }
 }
