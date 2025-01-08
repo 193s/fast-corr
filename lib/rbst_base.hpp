@@ -26,7 +26,7 @@ namespace FastCorr {
     Ptr make_tree() {return Ptr();}
     */
 
-    int size(Ptr t) const { return count(t); }
+    inline int size(const Ptr t) const noexcept { return count(t); }
 
     Ptr merge(Ptr l, Ptr r) {
       if (!l || !r) return l ? l : r;
@@ -55,7 +55,7 @@ namespace FastCorr {
       }
     }
 
-    Ptr build(int l, int r, const std::vector<decltype(Node::key)> &v) {
+    Ptr build(int l, int r, const std::vector<decltype(Node::key_d1)> &v) {
       if (l + 1 == r) return my_new(v[l]);
       int m = (l + r) >> 1;
       Ptr pm = my_new(v[m]);
@@ -64,7 +64,7 @@ namespace FastCorr {
       return update(pm);
     }
 
-    Ptr build(const std::vector<decltype(Node::key)> &v) {
+    Ptr build(const std::vector<decltype(Node::key_d1)> &v) {
       return build(0, (int)v.size(), v);
     }
 
@@ -87,10 +87,8 @@ namespace FastCorr {
       return x_ ^= x_ << 7, x_ ^= x_ >> 9, x_ & 0xFFFFFFFFull;
     }
 
-    inline int count(const Ptr t) const { return t ? t->cnt : 0; }
-
+    inline int count(const Ptr t) const noexcept { return t ? t->cnt : 0; }
     virtual void push(Ptr) = 0;
-
     virtual Ptr update(Ptr) = 0;
   };
 }

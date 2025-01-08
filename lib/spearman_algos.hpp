@@ -5,6 +5,7 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include <climits>
 #include "fast_corr_base.hpp"
 #include "lazy_rbst.hpp"
 
@@ -134,21 +135,22 @@ namespace FastCorr {
     template< class T >
     class Spearman : public SpearmanBase<T> {
       D2LazyRBST tree;
-      CountingTree< std::pair<T, int> > ctr_tree;
+      CountingTree< std::pair<T, unsigned int> > ctr_tree;
       int N = 0;
-      int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
+      unsigned int id_for_tree = 0u; // add unique ids to allow for duplicate values in CountingTree
+                                     // this is assuming # of add query < UINT_MAX
       std::deque<T> real_vals;
       D2LazyRBST::Node *root = tree.make_tree();
       inline std::pair<int, int> _add_value(const T &x_val) {
-        int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
-        int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z;
+        int z = ctr_tree.order_of_key(std::make_pair(x_val, 0u)); // # of < x_val
+        int dup = ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX)) - z;
         SpearmanBase<T>::Gx += (sp_d2_type)3*dup*(dup+1);
-        ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
+        ctr_tree.insert(std::make_pair(x_val, ++id_for_tree));
         return std::make_pair(z, dup);
       }
       inline std::pair<int, int> _remove_value(const T &x_val) {
-        int z = ctr_tree.order_of_key(std::make_pair(x_val, -1));
-        int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z - 1;
+        int z = ctr_tree.order_of_key(std::make_pair(x_val, 0u));
+        int dup = ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX)) - z - 1;
         ctr_tree.erase_kth(z); // erase @z (@z+dup) will also work
         // ctr_tree.erase(std::make_pair(x_val, <id to erase>));
         assert(dup >= 0);
@@ -170,16 +172,12 @@ namespace FastCorr {
 
           // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
           sp_d1_type new_d1 = (z-N)*2 + dup; // *= 2
-          NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1);
 
-          if (root == NULL) root = tree.build({newelem});
-          else {
-            assert(tree.size(root) == N);
-            // add +1(*2) to [z+dup, N) & add  +0.5(*2) to [z, z+dup)
-            if (z+dup < N) tree.apply(root, z+dup, N, +1*2); // +1(*2) to [z+dup, N)
-            if (dup > 0)   tree.apply(root, z, z+dup, +1); // +0.5(*2) to [z, z+dup)
-            tree.insert(root, z+dup, newelem); // insert new element @ z+dup
-          }
+          //assert(tree.size(root) == N);
+          // add +1(*2) to [z+dup, N) & add  +0.5(*2) to [z, z+dup)
+          if (z+dup < N) tree.apply(root, z+dup, N, +1*2); // +1(*2) to [z+dup, N)
+          if (dup > 0)   tree.apply(root, z, z+dup, +1); // +0.5(*2) to [z, z+dup)
+          tree.insert(root, z+dup, new_d1, (sp_d2_type)new_d1*new_d1); // insert new element @ z+dup
           N += 1;
         }
         // add a new element
@@ -190,15 +188,11 @@ namespace FastCorr {
 
           // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
           sp_d1_type new_d1 = (z-0)*2 + dup; // *= 2
-          NodeVal newelem = NodeVal(new_d1, (sp_d2_type)new_d1*new_d1);
 
-          if (root == NULL) root = tree.build({newelem});
-          else {
-            assert(tree.size(root) == N);
-            if (dup > 0) tree.apply(root, z, z+dup, -1); // [z, z+dup) -= 0.5(*2)
-            if (z > 0)   tree.apply(root, 0, z, -1*2); // [0, z) -= 1(*2) (y += 1)
-            tree.insert(root, z, newelem); // insert new element @ z
-          }
+          //assert(tree.size(root) == N);
+          if (dup > 0) tree.apply(root, z, z+dup, -1); // [z, z+dup) -= 0.5(*2)
+          if (z > 0)   tree.apply(root, 0, z, -1*2); // [0, z) -= 1(*2) (y += 1)
+          tree.insert(root, z, new_d1, (sp_d2_type)new_d1*new_d1); // insert new element @ z
           N += 1;
         }
         // remove an oldest element
@@ -221,14 +215,11 @@ namespace FastCorr {
           int z = p.first, dup = p.second;
 
           tree.erase(root, z+dup); // erase @z+dup
-          if (dup>0)       tree.apply(root, z, z+dup, -1);       // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
+          if (dup>0)       tree.apply(root, z, z+dup, -1);     // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
           if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*2); // [z+dup, )  -= 1(*2)
           N -= 1;
         }
-        sp_d2_type spearman_d() const noexcept override {
-          if (root == NULL) return 0;
-          return root->sum.d2;
-        }
+        sp_d2_type spearman_d() const noexcept override { return tree.sum_d2(root); }
         size_t size() const noexcept override { return N; }
     };
     /**
@@ -257,6 +248,7 @@ namespace FastCorr {
       public:
         SpearmanLinear() {}
         SpearmanLinear(const std::vector<T> &x_vals) {
+          D.reserve(N); // optional
           for (auto &x : x_vals) push_back(x);
         }
         // add a new element

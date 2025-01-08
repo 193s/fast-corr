@@ -5,54 +5,31 @@ namespace FastCorr {
   /**
    * Internal node class defined for Spearman algorithm
    */
-  struct NodeVal {
-    sp_d1_type d1;
-    sp_d2_type d2;
-    NodeVal() { d1 = d2 = 0; }
-    NodeVal(sp_d1_type x1, sp_d2_type x2) { d1 = x1, d2 = x2; }
-  };
-  inline NodeVal f(const NodeVal &x, const NodeVal &y) {
-    return NodeVal(x.d1 + y.d1, x.d2 + y.d2);
-  }
-  inline void g(NodeVal &x, int a, int cnt) { // this modifies the content of x
-    if (a == 0) return;
-    x.d2 += (sp_d2_type)a*(a*cnt + 2*x.d1); // d2 += a^2*n + 2*a*d1
-    x.d1 += (sp_d1_type)a*cnt;
-  }
-  typedef int E;
-  typedef NodeVal T;
-
-  /**
-   * @brief Randomized binary search tree with lazy propergation, customized for spearman calculation
-   */
-  template <typename T, typename E>
+  template <typename E>
   struct D2LazyRBSTNode {
     typename RBSTBase<D2LazyRBSTNode>::Ptr l, r;
-    T key, sum;
+    sp_d1_type key_d1, sum_d1;
+    sp_d2_type key_d2, sum_d2;
     E lazy;
     int cnt;
 
-    D2LazyRBSTNode(const T &t = T(), const E &e = E())
-        : l(), r(), key(t), sum(t), lazy(e), cnt(1) {}
+    //D2LazyRBSTNode(const T &t = T(), const E &e = E())
+    D2LazyRBSTNode(sp_d1_type d1 = sp_d1_type(), sp_d2_type d2 = sp_d2_type())
+        : l(), r(), key_d1(d1), sum_d1(d1), key_d2(d2), sum_d2(d2), lazy(0), cnt(1) {}
   };
 
-  //template <typename T, typename E, T (*f)(T, T), T (*g)(T, E), E (*h)(E, E)>
-  struct D2LazyRBST : RBSTBase<D2LazyRBSTNode<T, E>> {
-    using Node = D2LazyRBSTNode<T, E>;
-    using base = RBSTBase<D2LazyRBSTNode<T, E>>;
+  typedef int E;
+  /**
+   * @brief Randomized binary search tree with lazy propergation, customized for spearman calculation
+   */
+  struct D2LazyRBST : RBSTBase<D2LazyRBSTNode<E>> {
+    using Node = D2LazyRBSTNode<E>;
+    using base = RBSTBase<D2LazyRBSTNode<E>>;
     using base::merge;
     using base::split;
     using typename base::Ptr;
 
     D2LazyRBST() = default;
-
-    T fold(Ptr &t, int a, int b) {
-      auto x = split(t, a);
-      auto y = split(x.second, b - a);
-      auto ret = sum(y.first);
-      t = merge(x.first, merge(y.first, y.second));
-      return ret;
-    }
 
     void apply(Ptr &t, int a, int b, const E &e) {
       auto x = split(t, a);
@@ -60,31 +37,34 @@ namespace FastCorr {
       propagate(y.first, e);
       t = merge(x.first, merge(y.first, y.second));
     }
-
-   protected:
-    inline T sum(const Ptr t) const { return t ? t->sum : T(); }
-
-    Ptr update(Ptr t) override {
-      push(t);
-      t->cnt = 1;
-      t->sum = t->key;
-      if (t->l) t->cnt += t->l->cnt, t->sum = f(t->l->sum, t->sum);
-      if (t->r) t->cnt += t->r->cnt, t->sum = f(t->sum, t->r->sum);
-      return t;
-    }
-
-    void push(Ptr t) override {
-      if (t->lazy != E()) {
-        if (t->l) propagate(t->l, t->lazy);
-        if (t->r) propagate(t->r, t->lazy);
-        t->lazy = E();
+    inline sp_d2_type sum_d2(const Ptr t) const noexcept { return t ? t->sum_d2 : sp_d2_type(); }
+    protected:
+      Ptr update(Ptr t) override {
+        push(t);
+        t->cnt = 1;
+        t->sum_d1 = t->key_d1;
+        t->sum_d2 = t->key_d2;
+        if (t->l) t->cnt += t->l->cnt, t->sum_d1 += t->l->sum_d1, t->sum_d2 += t->l->sum_d2;
+        if (t->r) t->cnt += t->r->cnt, t->sum_d1 += t->r->sum_d1, t->sum_d2 += t->r->sum_d2;
+        return t;
       }
-    }
 
-    void propagate(Ptr t, const E &x) {
-      t->lazy += x;
-      g(t->key, x, 1);
-      g(t->sum, x, t->cnt);
-    }
+      void push(Ptr t) override {
+        if (t->lazy != E()) {
+          if (t->l) propagate(t->l, t->lazy);
+          if (t->r) propagate(t->r, t->lazy);
+          t->lazy = E();
+        }
+      }
+
+      void propagate(Ptr t, const E &a) {
+        t->lazy += a;
+        // add(t->key, x, 1)
+        t->key_d2 += (sp_d2_type)a*((sp_d2_type)2*t->key_d1 + a); // d2 += a^2*n + 2*a*d1
+        t->key_d1 += a; // d1 += a
+        // add(t->sum, x, t->cnt);
+        t->sum_d2 += (sp_d2_type)a*((sp_d2_type)2*t->sum_d1 + a*(t->cnt));
+        t->sum_d1 += (sp_d2_type)a*(t->cnt);
+      }
   };
 }

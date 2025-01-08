@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <type_traits>
+#include <climits>
 #include "fast_corr_base.hpp"
 
 namespace FastCorr {
@@ -61,12 +62,12 @@ namespace FastCorr {
 
     template< class T >
     class Kendall : public KendallBase<T> {
-      CountingTree< std::pair<T, int> > ctr_tree;
+      CountingTree< std::pair<T, unsigned int> > ctr_tree;
       std::deque<std::pair<T, T> > vals;
       std::map<T, int> ctr_X;
       int min_y_ctr = 0, max_y_ctr = 0;
-      int id_for_tree = 0; // add unique id to allow for duplicate values in CountingTree
-                           // assuming maximum number of operations <= INT_MAX
+      unsigned int id_for_tree = 0u; // add unique id to allow for duplicate values in CountingTree
+                                    // this is assuming # of add queries < UINT_MAX
       kd_n2_type K = 0, L = 0, n1 = 0;
 
       inline void _add_value(const T &x_val) {
@@ -86,9 +87,9 @@ namespace FastCorr {
         }
         void push_back(const T &x_val) override {
           vals.push_back(std::make_pair(x_val, max_y_ctr++));
-          K += ctr_tree.order_of_key(std::make_pair(x_val, -1));
-          L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
-          ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
+          K += ctr_tree.order_of_key(std::make_pair(x_val, 0u));
+          L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX));
+          ctr_tree.insert(std::make_pair(x_val, ++id_for_tree));
           _add_value(x_val);
         }
         void pop_front() override {
@@ -97,18 +98,18 @@ namespace FastCorr {
           min_y_ctr++;
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
           vals.pop_front();
-          int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, -1));
+          int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, 0u));
           ctr_tree.erase_kth(num_lower);
 
-          K -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
+          K -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX));
           L -= num_lower;
           _remove_value(x_val);
         }
         void push_front(const T &x_val) override {
           vals.push_front(std::make_pair(x_val, --min_y_ctr));
-          K += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
-          L += ctr_tree.order_of_key(std::make_pair(x_val, -1));
-          ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
+          K += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX));
+          L += ctr_tree.order_of_key(std::make_pair(x_val, 0u));
+          ctr_tree.insert(std::make_pair(x_val, ++id_for_tree));
           _add_value(x_val);
         }
         void pop_back() override {
@@ -116,11 +117,11 @@ namespace FastCorr {
           max_y_ctr--;
           T x_val = z.first;
           vals.pop_back();
-          int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, -1));
+          int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, 0u));
           ctr_tree.erase_kth(num_lower);
 
           K -= num_lower;
-          L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
+          L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, UINT_MAX));
           _remove_value(x_val);
         }
         corr_type kendall_tau() const noexcept override {
