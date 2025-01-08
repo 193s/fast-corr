@@ -191,3 +191,41 @@ void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbo
     }
   }
 }
+// O(N^2) implementation for validation (tau-b)
+template< class TX, class TY >
+double slow_kendall_tau(const std::deque<std::pair<TX, TY> > &vals) {
+  int n = vals.size();
+  if (n <= 1) return NAN;
+  kd_n2_type K = 0, L = 0;
+  const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
+  /*
+  std::vector<T> xs(n);
+  for (int i=0; i<n; i++) xs[i] = vals[i].first;
+  kd_n2_type n1 = offline_nC2_counter(xs);
+  for (int i=0; i<n; i++) xs[i] = vals[i].second;
+  kd_n2_type n2 = offline_nC2_counter(xs);
+  */
+
+  std::map<TX, int> ctr_X;
+  std::map<TY, int> ctr_Y;
+  // O(nlogn)
+  for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
+  for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
+  kd_n2_type n1 = 0, n2 = 0;
+  for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
+  for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
+  // O(N^2)
+  for (int i=0; i<n; i++) {
+    for (int j=0; j<i; j++) {
+      TX xi = vals[i].first,  xj = vals[j].first;
+      TY yi = vals[i].second, yj = vals[j].second;
+      if ((xi < xj && yi < yj) || (xi > xj && yi > yj)) K++;
+      if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
+    }
+  }
+  if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
+  // return (double)(K-L) / (double)n0; // tau-a
+  return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
+  //int m = min(ctr_X.size(), ctr_Y.size());
+  //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
+}

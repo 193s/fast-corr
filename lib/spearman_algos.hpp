@@ -80,7 +80,7 @@ namespace FastCorr {
    * time complexity: O(NlogN)
    */
   template< class T >
-  std::vector<int> convert_array_to_rank(const std::vector<T> &X) {
+  std::vector<int> rankdata(const std::vector<T> &X) {
     int n = X.size();
     if (n == 0) return {};
     if (n == 1) return {2};
@@ -115,7 +115,7 @@ namespace FastCorr {
           sp_d2_type d = spearman_d(); // d = sum[i=1..n]((2d_i)^2) = 4*actual_D
           return spearman_r_from_n_4d_and_Gx(size(), d, Gx);
         }
-        double r() const { return spearman_r(); } // r() is an alias for spearman_r()
+        double r() const override { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
         mutable sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
         // Gy = 0 under monotonic constraints
@@ -158,7 +158,7 @@ namespace FastCorr {
         }
 
         // add a new element
-        void push_back(const T &x_val) {
+        void push_back(const T &x_val) override {
           real_vals.push_back(x_val);
           auto p = _add_value(x_val);
           int z = p.first, dup = p.second;
@@ -178,7 +178,7 @@ namespace FastCorr {
           N += 1;
         }
         // add a new element
-        void push_front(const T &x_val) {
+        void push_front(const T &x_val) override {
           real_vals.push_front(x_val);
           auto p = _add_value(x_val);
           int z = p.first, dup = p.second;
@@ -197,7 +197,7 @@ namespace FastCorr {
           N += 1;
         }
         // remove an oldest element
-        void pop_front() {
+        void pop_front() override {
           T x_val = real_vals.front();
           real_vals.pop_front();
           auto p = _remove_value(x_val);
@@ -209,7 +209,7 @@ namespace FastCorr {
           N -= 1;
         }
         // remove an oldest element
-        void pop_back() {
+        void pop_back() override {
           T x_val = real_vals.back();
           real_vals.pop_back();
           auto p = _remove_value(x_val);
@@ -220,11 +220,11 @@ namespace FastCorr {
           if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*2); // [z+dup, )  -= 1(*2)
           N -= 1;
         }
-        sp_d2_type spearman_d() const {
+        sp_d2_type spearman_d() const override {
           if (root == NULL) return 0;
           return root->sum.d2;
         }
-        size_t size() const { return N; }
+        size_t size() const override { return N; }
     };
     /**
      * Online Implementation of Spearman's rank correlation without Binary Search Tree
@@ -255,7 +255,7 @@ namespace FastCorr {
           for (auto &x : x_vals) push_back(x);
         }
         // add a new element
-        void push_back(const T &x_val) {
+        void push_back(const T &x_val) override {
           int dup = _add_value(x_val);
           int z = 0;
           for (T &x : X_val) if (x < x_val) z++;
@@ -266,7 +266,7 @@ namespace FastCorr {
           D[z+dup] = (z - N)*2 + dup; // D_i := X_i - Y_i (*2)
           N += 1;
         }
-        void push_front(const T &x_val) {
+        void push_front(const T &x_val) override {
           int dup = _add_value(x_val);
           int z = 0;
           for (T &x : X_val) if (x < x_val) z++;
@@ -279,7 +279,7 @@ namespace FastCorr {
           N += 1;
         }
         // remove an oldest element
-        void pop_front() {
+        void pop_front() override {
           T x_val = X_val.front();
           int dup = _remove_value(x_val);
           int z = 0;
@@ -291,7 +291,7 @@ namespace FastCorr {
           X_val.pop_front();
           D.pop_back();
         }
-        void pop_back() {
+        void pop_back() override {
           T x_val = X_val.back();
           int dup = _remove_value(x_val);
           int z = 0;
@@ -302,12 +302,12 @@ namespace FastCorr {
           X_val.pop_back();
           D.pop_back();
         }
-        sp_d2_type spearman_d() const {
+        sp_d2_type spearman_d() const override {
           sp_d2_type d = 0;
           for (int i=0; i<N; i++) d += (sp_d2_type)D[i]*D[i];
           return d;
         }
-        size_t size() const { return N; }
+        size_t size() const override { return N; }
     };
 
 
@@ -325,23 +325,23 @@ namespace FastCorr {
         OfflineSpearmanForBenchmark(const std::vector<T> &x_vals) {
           for (auto &x : x_vals) push_back(x);
         }
-        void push_back(const T &x_val) {
+        void push_back(const T &x_val) override {
           vals.push_back(std::make_pair(x_val, max_y_ctr++));
         }
-        void push_front(const T &x_val) {
+        void push_front(const T &x_val) override {
           vals.push_front(std::make_pair(x_val, --min_y_ctr));
         }
-        void pop_front() {
+        void pop_front() override {
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
           min_y_ctr++;
           vals.pop_front();
         }
-        void pop_back() {
+        void pop_back() override {
           max_y_ctr--;
           vals.pop_back();
         }
-        size_t size() const { return vals.size(); }
-        sp_d2_type spearman_d() const {
+        size_t size() const override { return vals.size(); }
+        sp_d2_type spearman_d() const override {
           int n = vals.size();
           std::vector<T> xs(n);
           for (int i=0; i<n; i++) xs[i] = vals[i].first;
@@ -387,8 +387,8 @@ namespace FastCorr {
     sp_d2_type spearman_d(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
       int n = x_vals.size();
       // calculate ranks and 4d
-      std::vector<int> X = convert_array_to_rank(x_vals);
-      std::vector<int> Y = convert_array_to_rank(y_vals);
+      std::vector<int> X = rankdata(x_vals);
+      std::vector<int> Y = rankdata(y_vals);
       sp_d2_type d = 0;
       for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
       return d;

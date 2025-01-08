@@ -55,7 +55,7 @@ namespace FastCorr {
     class KendallBase : public Base<T> {
       public:
         virtual double kendall_tau() const = 0;
-        double r() const { return kendall_tau(); } // r() is an alias for kendall_tau()
+        double r() const override { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
     template< class T >
@@ -83,14 +83,14 @@ namespace FastCorr {
         Kendall(const std::vector<T> &x_vals) {
           for (auto &x : x_vals) push_back(x);
         }
-        void push_back(const T &x_val) {
+        void push_back(const T &x_val) override {
           vals.push_back(std::make_pair(x_val, max_y_ctr++));
           K += ctr_tree.order_of_key(std::make_pair(x_val, -1));
           L += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
           ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
           _add_value(x_val);
         }
-        void pop_front() {
+        void pop_front() override {
           auto z = vals.front();
           T x_val = z.first;
           min_y_ctr++;
@@ -103,14 +103,14 @@ namespace FastCorr {
           L -= num_lower;
           _remove_value(x_val);
         }
-        void push_front(const T &x_val) {
+        void push_front(const T &x_val) override {
           vals.push_front(std::make_pair(x_val, --min_y_ctr));
           K += ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
           L += ctr_tree.order_of_key(std::make_pair(x_val, -1));
           ctr_tree.insert(std::make_pair(x_val, id_for_tree++));
           _add_value(x_val);
         }
-        void pop_back() {
+        void pop_back() override {
           auto z = vals.back();
           max_y_ctr--;
           T x_val = z.first;
@@ -122,14 +122,14 @@ namespace FastCorr {
           L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
           _remove_value(x_val);
         }
-        double kendall_tau() const {
+        double kendall_tau() const override {
           int N = vals.size();
           kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
           // n2 = 0 because y_i has no duplicate values
           if (n1 == n0) return NAN; // denominator will be 0 on tau-b/c
           return (double)(K-L) / sqrt((double)(n0-n1)*(double)n0); // tau-b (n2=0)
         }
-        size_t size() const { return vals.size(); }
+        size_t size() const override { return vals.size(); }
     };
 
     template< class T >
@@ -142,27 +142,27 @@ namespace FastCorr {
         OfflineKendallForBenchmark(const std::vector<T> &x_vals) {
           for (auto &x : x_vals) push_back(x);
         }
-        void push_back(const T &x_val) {
+        void push_back(const T &x_val) override {
           vals.push_back(std::make_pair(x_val, max_y_ctr++));
         }
-        void push_front(const T &x_val) {
+        void push_front(const T &x_val) override {
           vals.push_front(std::make_pair(x_val, --min_y_ctr));
         }
-        void pop_front() {
+        void pop_front() override {
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
           min_y_ctr++;
           vals.pop_front();
         }
-        void pop_back() {
+        void pop_back() override {
           max_y_ctr--;
           vals.pop_back();
         }
         // O(NlogN) efficient offline algorithm (tau-b)
-        double kendall_tau() const {
+        double kendall_tau() const override {
           return OfflineCorr::kendall_tau(vals);
           //return OfflineCorr::slow_kendall_tau<T>(vals);
         }
-        size_t size() const { return vals.size(); }
+        size_t size() const override { return vals.size(); }
     };
   }
   namespace OnlineCorr {
@@ -174,6 +174,27 @@ namespace FastCorr {
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
         virtual double r() const = 0;
         virtual size_t size() const = 0;
+    };
+
+    template<class TY>
+    class KendallOnBoundedX : public Base<int, TY> {
+      public:
+        const int MAX_X;
+        int N = 0;
+        KendallOnBoundedX(int MAX_X) : MAX_X(MAX_X) {
+        }
+        void add(const int &x_val, const TY &y_val) override {
+          N++;
+        }
+        void remove(const int &x_val, const TY &y_val) override {
+          N--;
+        }
+        double r() const override {
+          return 0;
+        }
+        size_t size() const override {
+          return N;
+        }
     };
   }
 
@@ -260,43 +281,5 @@ namespace FastCorr {
       //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
     }
 
-    // O(N^2) implementation for validation (tau-b)
-    template< class TX, class TY >
-    double slow_kendall_tau(const std::deque<std::pair<TX, TY> > &vals) {
-      int n = vals.size();
-      if (n <= 1) return NAN;
-      kd_n2_type K = 0, L = 0;
-      const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
-      /*
-      std::vector<T> xs(n);
-      for (int i=0; i<n; i++) xs[i] = vals[i].first;
-      kd_n2_type n1 = offline_nC2_counter(xs);
-      for (int i=0; i<n; i++) xs[i] = vals[i].second;
-      kd_n2_type n2 = offline_nC2_counter(xs);
-      */
-
-      std::map<TX, int> ctr_X;
-      std::map<TY, int> ctr_Y;
-      // O(nlogn)
-      for (int i=0; i<n; i++) ctr_X[vals[i].first]++;
-      for (int i=0; i<n; i++) ctr_Y[vals[i].second]++;
-      kd_n2_type n1 = 0, n2 = 0;
-      for (auto &p : ctr_X) n1 += (kd_n2_type)p.second * (p.second-1) / 2;
-      for (auto &p : ctr_Y) n2 += (kd_n2_type)p.second * (p.second-1) / 2;
-      // O(N^2)
-      for (int i=0; i<n; i++) {
-        for (int j=0; j<i; j++) {
-          TX xi = vals[i].first,  xj = vals[j].first;
-          TY yi = vals[i].second, yj = vals[j].second;
-          if ((xi < xj && yi < yj) || (xi > xj && yi > yj)) K++;
-          if ((xi < xj && yi > yj) || (xi > xj && yi < yj)) L++;
-        }
-      }
-      if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
-      // return (double)(K-L) / (double)n0; // tau-a
-      return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
-      //int m = min(ctr_X.size(), ctr_Y.size());
-      //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
-    }
   }
 }

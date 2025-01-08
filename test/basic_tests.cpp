@@ -113,7 +113,7 @@ TEST_CASE("check results with Python's scipy.stats") {
       }
     }
 
-    SUBCASE("convert_array_to_rank vs scipy.stats.rankdata") {
+    SUBCASE("rankdata vs scipy.stats.rankdata") {
       bool duplicate_test = true;
       SUBCASE("with duplicates") { duplicate_test = true; }
       SUBCASE("without duplicates") { duplicate_test = false; }
@@ -121,7 +121,7 @@ TEST_CASE("check results with Python's scipy.stats") {
       for (int loop=0; loop<3; loop++) {
         int n = 10;
         vector<int> xs = generate_random_int_sequence(n, seed+loop, duplicate_test);
-        vector<int> ys = convert_array_to_rank(xs);
+        vector<int> ys = rankdata(xs);
         MESSAGE("testing rankdata with ", internal_stringify(xs), "...");
         CHECK(0 == system_exec(python_cmd
             + " -c 'import scipy.stats; assert(all("+internal_stringify(ys)
@@ -133,13 +133,13 @@ TEST_CASE("check results with Python's scipy.stats") {
 }
 // tests on helper functions
 TEST_CASE("testing helper functions") {
-  // vector<int> convert_array_to_rank(vector<T> arr)
+  // vector<int> rankdata(vector<T> arr)
   // [3, 12123, 0] -> [2, 3, 1]*2
-  assert_eq(convert_array_to_rank(vector<double>({3, 123123, 0})), vector<int>({4, 6, 2}));
+  assert_eq(rankdata(vector<double>({3, 123123, 0})), vector<int>({4, 6, 2}));
   // [1, 2, 2, 2, 5, 5, 7] -> [1, 3, 3, 3, 5.5, 5.5, 7]*2
-  assert_eq(convert_array_to_rank(vector<double>({1, 2, 2, 2, 5, 5, 7})), vector<int>({2, 6, 6, 6, 11, 11, 14}));
+  assert_eq(rankdata(vector<double>({1, 2, 2, 2, 5, 5, 7})), vector<int>({2, 6, 6, 6, 11, 11, 14}));
   // [1, 1, 1, 1] -> [2.5, 2.5, 2.5, 2.5]
-  assert_eq(convert_array_to_rank(vector<double>({1, 1, 1, 1})), vector<int>({5, 5, 5, 5}));
+  assert_eq(rankdata(vector<double>({1, 1, 1, 1})), vector<int>({5, 5, 5, 5}));
 }
 
 TEST_CASE("spearman basic testing") {
