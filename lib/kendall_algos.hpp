@@ -34,18 +34,16 @@ namespace FastCorr {
     struct BinaryIndexedTree {
       int n;
       std::vector<int> xs;
-      BinaryIndexedTree(int n) : n(n) {
-        xs.resize(n+1);
-      }
+      BinaryIndexedTree(int n) : n(n), xs(n+1, 0) {}
       void add(int i, int v) {
         for (int x=i+1; x<=n; x+=x&-x) xs[x] += v;
       }
-      int sum(int i) {
+      int sum(int i) const {
         int s = 0;
         for (int x=i+1; x>0; x-=x&-x) s += xs[x];
         return s;
       }
-      int sum(int a, int b) {
+      int sum(int a, int b) const {
         return sum(b) - sum(a-1);
       }
     };
@@ -57,8 +55,8 @@ namespace FastCorr {
     template< class T >
     class KendallBase : public Base<T> {
       public:
-        virtual corr_type kendall_tau() const = 0;
-        corr_type r() const override { return kendall_tau(); } // r() is an alias for kendall_tau()
+        virtual corr_type kendall_tau() const noexcept = 0;
+        corr_type r() const noexcept override { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
     template< class T >
@@ -125,7 +123,7 @@ namespace FastCorr {
           L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
           _remove_value(x_val);
         }
-        corr_type kendall_tau() const override {
+        corr_type kendall_tau() const noexcept override {
           int N = vals.size();
           kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
           // n2 = 0 because y_i has no duplicate values
@@ -133,7 +131,7 @@ namespace FastCorr {
           return (corr_type)(K-L) / (
               (corr_type)n0 * sqrt((corr_type)1.0-(corr_type)n1/(corr_type)n0)); // tau-b (n2=0)
         }
-        size_t size() const override { return vals.size(); }
+        size_t size() const noexcept override { return vals.size(); }
     };
 
     template< class T >
@@ -162,11 +160,11 @@ namespace FastCorr {
           vals.pop_back();
         }
         // O(NlogN) efficient offline algorithm (tau-b)
-        corr_type kendall_tau() const override {
+        corr_type kendall_tau() const noexcept override {
           return OfflineCorr::kendall_tau(vals);
           //return OfflineCorr::slow_kendall_tau<T>(vals);
         }
-        size_t size() const override { return vals.size(); }
+        size_t size() const noexcept override { return vals.size(); }
     };
   }
   namespace OnlineCorr {
@@ -200,10 +198,10 @@ namespace FastCorr {
           assert(0 <= x_val && x_val <= MAX_X);
           N--;
         }
-        corr_type r() const override {
+        corr_type r() const noexcept override {
           return 0;
         }
-        size_t size() const override {
+        size_t size() const noexcept override {
           return N;
         }
     };
@@ -220,8 +218,8 @@ namespace FastCorr {
         KendallOnBoundedY(TY MAX_Y) : algo(MAX_Y) {}
         inline void add   (const TX &x_val, const TY &y_val) override { algo.add   (y_val, x_val); }
         inline void remove(const TX &x_val, const TY &y_val) override { algo.remove(y_val, x_val); }
-        inline corr_type r() const override { return algo.r(); }
-        inline size_t size() const override { return algo.size(); }
+        inline corr_type r() const noexcept override { return algo.r(); }
+        inline size_t size() const noexcept override { return algo.size(); }
     };
   }
 

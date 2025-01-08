@@ -114,13 +114,13 @@ namespace FastCorr {
     template< class T >
     class SpearmanBase : public Base<T> {
       public:
-        virtual sp_d2_type spearman_d() const = 0;
-        virtual size_t size() const = 0;
-        corr_type spearman_r() const {
+        virtual sp_d2_type spearman_d() const noexcept = 0;
+        virtual size_t size() const noexcept = 0;
+        corr_type spearman_r() const noexcept {
           sp_d2_type d = spearman_d(); // d = sum[i=1..n]((2d_i)^2) = 4*actual_D
           return spearman_r_from_n_4d_and_Gx(size(), d, Gx);
         }
-        corr_type r() const override { return spearman_r(); } // r() is an alias for spearman_r()
+        corr_type r() const noexcept override { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
         mutable sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
         // Gy = 0 under monotonic constraints
@@ -225,11 +225,11 @@ namespace FastCorr {
           if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*2); // [z+dup, )  -= 1(*2)
           N -= 1;
         }
-        sp_d2_type spearman_d() const override {
+        sp_d2_type spearman_d() const noexcept override {
           if (root == NULL) return 0;
           return root->sum.d2;
         }
-        size_t size() const override { return N; }
+        size_t size() const noexcept override { return N; }
     };
     /**
      * Online Implementation of Spearman's rank correlation without Binary Search Tree
@@ -307,12 +307,12 @@ namespace FastCorr {
           X_val.pop_back();
           D.pop_back();
         }
-        sp_d2_type spearman_d() const override {
+        sp_d2_type spearman_d() const noexcept override {
           sp_d2_type d = 0;
           for (int i=0; i<N; i++) d += (sp_d2_type)D[i]*D[i];
           return d;
         }
-        size_t size() const override { return N; }
+        size_t size() const noexcept override { return N; }
     };
 
 
@@ -345,8 +345,8 @@ namespace FastCorr {
           max_y_ctr--;
           vals.pop_back();
         }
-        size_t size() const override { return vals.size(); }
-        sp_d2_type spearman_d() const override {
+        size_t size() const noexcept override { return vals.size(); }
+        sp_d2_type spearman_d() const noexcept override {
           int n = vals.size();
           std::vector<T> xs(n);
           for (int i=0; i<n; i++) xs[i] = vals[i].first;

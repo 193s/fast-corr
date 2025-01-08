@@ -41,8 +41,8 @@ namespace FastCorr {
         virtual void push_back(const T &x_val) = 0;
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
-        virtual size_t size() const = 0;
-        virtual corr_type r() const = 0;
+        virtual size_t size() const noexcept = 0;
+        virtual corr_type r() const noexcept = 0;
     };
   }
 
@@ -55,8 +55,8 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual corr_type r() const = 0;
-        virtual size_t size() const = 0;
+        virtual corr_type r() const noexcept = 0;
+        virtual size_t size() const noexcept = 0;
     };
   }
 
@@ -83,7 +83,7 @@ namespace FastCorr {
       void erase_kth(const int &k) {
         gpp_tree.erase(gpp_tree.find_by_order(k));
       }
-      size_t size() const {
+      size_t size() const noexcept {
         return gpp_tree.size();
       }
   };
@@ -167,7 +167,7 @@ namespace FastCorr {
       void erase_kth(const int &k) {
         ctr_tree.erase(root, k);
       }
-      size_t size() const {
+      size_t size() const noexcept {
         return ctr_tree.size(root);
       }
   };

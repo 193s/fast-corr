@@ -58,12 +58,12 @@ namespace FastCorr {
           x_mean = x_new_mean, y_mean = y_new_mean;
           N -= 1;
         }
-        corr_type pearson_r() const {
+        corr_type pearson_r() const noexcept {
           if (N <= 1) return NAN;
           return cov / (sqrt(var_x)*sqrt(var_y));
         }
-        virtual corr_type r() const override { return pearson_r(); }
-        virtual size_t size() const override { return N; }
+        virtual corr_type r() const noexcept override { return pearson_r(); }
+        virtual size_t size() const noexcept override { return N; }
     };
   }
 }
