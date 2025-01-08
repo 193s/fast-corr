@@ -47,8 +47,8 @@ namespace FastCorr {
   corr_type spearman_r_from_n_4d_Gx_and_Gy(int n, sp_d2_type d, sp_d2_type Gx, sp_d2_type Gy) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if (Gx == n3 || Gy == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Gx == 0  && Gy == 0)
+    if (FAST_CORR_UNLIKELY(Gx == n3 || Gy == n3)) return NAN; // rank X_i can not be defined in this case
+    else if (Gx == 0 && Gy == 0)
       return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
       // general formula:
@@ -66,8 +66,8 @@ namespace FastCorr {
   corr_type spearman_r_from_n_4d_and_Gx(int n, sp_d2_type d, sp_d2_type Gx) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if      (Gx == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Gx == 0 ) return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
+    if  (FAST_CORR_UNLIKELY(Gx == n3)) return NAN; // rank X_i can not be defined in this case
+    else if (Gx == 0) return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
       // when Gy = 0,
       // = (2*n3 - 3*(4D) - Gx - Gy) / (2*n3*(sqrt(1 - Gx/n3) * sqrt(1-Gy/n3)))
@@ -88,8 +88,8 @@ namespace FastCorr {
   template< class T >
   std::vector<int> rankdata(const std::vector<T> &X) {
     int n = X.size();
-    if (n == 0) return {};
-    if (n == 1) return {2};
+    if (FAST_CORR_UNLIKELY(n == 0)) return {};
+    if (FAST_CORR_UNLIKELY(n == 1)) return {2};
     // n>=2
     std::vector<std::pair<T, int> > X2(n);
     for (int i=0; i<n; i++) X2[i] = std::pair<T, int>(X[i], i);

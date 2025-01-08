@@ -9,6 +9,14 @@
 #include "rbst_base.hpp"
 #endif
 
+#if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__clang__)
+#    define FAST_CORR_LIKELY(x) __builtin_expect(x, 1)   // NOLINT(cppcoreguidelines-macro-usage)
+#    define FAST_CORR_UNLIKELY(x) __builtin_expect(x, 0) // NOLINT(cppcoreguidelines-macro-usage)
+#else
+#    define FAST_CORR_LIKELY(x) (x)   // NOLINT(cppcoreguidelines-macro-usage)
+#    define FAST_CORR_UNLIKELY(x) (x) // NOLINT(cppcoreguidelines-macro-usage)
+#endif
+
 namespace FastCorr {
   // -- type definitions for spearman: change accordingly --
   typedef long long sp_d1_type; // sum(d_i) can be negative for some intervals, and is at max N^2
