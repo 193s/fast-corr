@@ -128,7 +128,7 @@ namespace FastCorr {
           int N = vals.size();
           kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
           // n2 = 0 because y_i has no duplicate values
-          if (FAST_CORR_UNLIKELY(n1 == n0)) return NAN; // denominator will be 0 on tau-b/c
+          if (FAST_CORR_UNLIKELY(n1 == n0)) return corr_NAN; // denominator will be 0 on tau-b/c
           return (corr_type)(K-L) / (
               (corr_type)n0 * sqrt((corr_type)1.0-(corr_type)n1/(corr_type)n0)); // tau-b (n2=0)
         }
@@ -259,7 +259,7 @@ namespace FastCorr {
     template< class TX, class TY >
     corr_type internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted) {
       const int n = sorted.size();
-      if (FAST_CORR_UNLIKELY(n <= 1)) return NAN;
+      if (FAST_CORR_UNLIKELY(n <= 1)) return corr_NAN;
       kd_n2_type K = 0, L = 0;
       const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
 
@@ -299,7 +299,7 @@ namespace FastCorr {
       for (int i=0; i<H; ++i) n2 += (kd_n2_type)ctr[i]*(ctr[i]-1);
       n2 /= 2;
 
-      if (FAST_CORR_UNLIKELY(n1 == n0 || n2 == n0)) return NAN; // denominator will be 0 on tau-b and tau-c
+      if (FAST_CORR_UNLIKELY(n1 == n0 || n2 == n0)) return corr_NAN; // denominator will be 0 on tau-b and tau-c
       // return (double)(K-L) / (double)n0; // tau-a
       //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
       return (corr_type)(K-L) / ((corr_type)n0 * sqrt(

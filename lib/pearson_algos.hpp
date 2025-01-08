@@ -59,7 +59,7 @@ namespace FastCorr {
           N -= 1;
         }
         corr_type pearson_r() const noexcept {
-          if (N <= 1) return NAN;
+          if (N <= 1) return corr_NAN;
           return cov / (sqrt(var_x)*sqrt(var_y));
         }
         virtual corr_type r() const noexcept override { return pearson_r(); }

@@ -45,9 +45,8 @@ namespace FastCorr {
 
 namespace FastCorr {
   corr_type spearman_r_from_n_4d_Gx_and_Gy(int n, sp_d2_type d, sp_d2_type Gx, sp_d2_type Gy) {
-    //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if (FAST_CORR_UNLIKELY(Gx == n3 || Gy == n3)) return NAN; // rank X_i can not be defined in this case
+    if (FAST_CORR_UNLIKELY(Gx == n3 || Gy == n3)) return corr_NAN; // rank X_i can not be defined in this case
     else if (Gx == 0 && Gy == 0)
       return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
@@ -64,9 +63,8 @@ namespace FastCorr {
   }
   // special case when Gy = 0
   corr_type spearman_r_from_n_4d_and_Gx(int n, sp_d2_type d, sp_d2_type Gx) {
-    //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if  (FAST_CORR_UNLIKELY(Gx == n3)) return NAN; // rank X_i can not be defined in this case
+    if  (FAST_CORR_UNLIKELY(Gx == n3)) return corr_NAN; // rank X_i can not be defined in this case
     else if (Gx == 0) return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
       // when Gy = 0,
