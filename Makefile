@@ -1,4 +1,4 @@
-C_COMPILER ?= g++-14
+C_COMPILER ?= g++-14 --std=c++11
 all: ./basic_tests ./benchmark ./sample
 LIB=lib/rbst_base.hpp lib/lazy_rbst.hpp lib/fast_corr_base.hpp lib/spearman_algos.hpp lib/kendall_algos.hpp lib/pearson_algos.hpp
 

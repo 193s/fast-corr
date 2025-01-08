@@ -1,5 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "../lib/doctest.h"
+#include "./doctest.h"
 #include "./test_base.hpp"
 
 TEST_CASE("test settings") {

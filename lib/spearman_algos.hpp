@@ -137,6 +137,8 @@ namespace FastCorr {
       CountingTree< std::pair<T, int> > ctr_tree;
       int N = 0;
       int id_for_tree = 0; // add unique ids to allow for duplicate values in CountingTree
+      std::deque<T> real_vals;
+      D2LazyRBST::Node *root = tree.make_tree();
       inline std::pair<int, int> _add_value(const T &x_val) {
         int z = ctr_tree.order_of_key(std::make_pair(x_val, -1)); // # of < x_val
         int dup = ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree)) - z;
@@ -155,8 +157,6 @@ namespace FastCorr {
       }
 
       public:
-        std::deque<T> real_vals;
-        D2LazyRBST::Node *root = tree.make_tree();
         Spearman() {}
         Spearman(const std::vector<T> &x_vals) {
           for (auto &x : x_vals) push_back(x);

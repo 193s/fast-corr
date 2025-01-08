@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #if __has_include(<ext/pb_ds/assoc_container.hpp>) // G++ environment
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
@@ -26,6 +27,7 @@ namespace FastCorr {
   typedef double corr_type; // data type used to store correlation coefficients
                             // options are: double, float, long double
                             // (std::sqrt needs to be defined on corr_type)
+  static_assert(std::is_floating_point<corr_type>::value, "corr_type must be a floating point type");
 
   corr_type spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx);
   /**

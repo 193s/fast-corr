@@ -5,6 +5,7 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include <type_traits>
 #include "fast_corr_base.hpp"
 
 namespace FastCorr {
@@ -16,6 +17,7 @@ namespace FastCorr {
     template< class TX, class TY >
     corr_type kendall_tau(const std::deque< std::pair<TX, TY> > &vals);
 
+    /* currently this is not used
     // Calculating sum[i] t_i*(t_i-1)/2 - this is faster than using std::map
     template< class T >
     kd_n2_type offline_nC2_counter(std::vector<T> xs, bool already_sorted=false) {
@@ -28,6 +30,7 @@ namespace FastCorr {
       }
       return ret;
     };
+    */
     struct BinaryIndexedTree {
       int n;
       std::vector<int> xs;
@@ -177,17 +180,24 @@ namespace FastCorr {
         virtual size_t size() const = 0;
     };
 
-    template<class TY>
-    class KendallOnBoundedX : public Base<int, TY> {
+    /** Online Kendall Algorithm when X_i of added pairs are all positive integers from 0 to MAX_X
+     * time complexity is O(log N * log MAX_X)
+     * space complexity is O(N log N * log MAX_X) overall
+     */
+    template<class TX, class TY>
+    class KendallOnBoundedX : public Base<TX, TY> {
+      static_assert(std::is_integral<TX>::value, "TX must be an integral type (int, long long, etc)");
       public:
-        const int MAX_X;
+        const TX MAX_X;
         int N = 0;
-        KendallOnBoundedX(int MAX_X) : MAX_X(MAX_X) {
+        KendallOnBoundedX(TX MAX_X) : MAX_X(MAX_X) {
         }
-        void add(const int &x_val, const TY &y_val) override {
+        void add(const TX &x_val, const TY &y_val) override {
+          assert(0 <= x_val && x_val <= MAX_X);
           N++;
         }
-        void remove(const int &x_val, const TY &y_val) override {
+        void remove(const TX &x_val, const TY &y_val) override {
+          assert(0 <= x_val && x_val <= MAX_X);
           N--;
         }
         corr_type r() const override {
@@ -196,6 +206,22 @@ namespace FastCorr {
         size_t size() const override {
           return N;
         }
+    };
+    /** Online Kendall Algorithm when Y_i of added pairs are all positive integers from 0 to MAX_X
+     * time complexity is O(log N * log MAX_X)
+     * space complexity is O(N log N * log MAX_X) overall
+     * Internally this is equivalent to KendallOnBoundedX, with x and y being exchanged
+     */
+    template<class TX, class TY>
+    class KendallOnBoundedY : public Base<TX, TY> {
+      static_assert(std::is_integral<TY>::value, "TY must be an integral type (int, long long, etc)");
+      KendallOnBoundedX<TY, TX> algo;
+      public:
+        KendallOnBoundedY(TY MAX_Y) : algo(MAX_Y) {}
+        inline void add   (const TX &x_val, const TY &y_val) override { algo.add   (y_val, x_val); }
+        inline void remove(const TX &x_val, const TY &y_val) override { algo.remove(y_val, x_val); }
+        inline corr_type r() const override { return algo.r(); }
+        inline size_t size() const override { return algo.size(); }
     };
   }
 
