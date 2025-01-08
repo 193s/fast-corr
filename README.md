@@ -81,16 +81,16 @@ This is nothing new, just a very straightforward set of implementations. The Ken
 T=10000, N=1000
 ========= SPEARMAN =========
 [MonotonicOnlineCorr::Spearman] O(logN)
-average execution time: 14.62ms (loop=137)
+average execution time: 10.23ms (loop=196)
 [MonotonicOnlineCorr::SpearmanLinear] O(N)
-average execution time: 13.58ms (loop=148)
+average execution time: 13.47ms (loop=149)
 [Offline Spearman] O(NlogN)
-average execution time: 667.11ms (loop=4)
+average execution time: 655.26ms (loop=4)
 ========= KENDALL =========
 [MonotonicOnlineCorr::Kendall] O(logN)
-average execution time: 5.46ms (loop=367)
+average execution time: 5.47ms (loop=366)
 [Offline Kendall] O(NlogN)
-average execution time: 708.41ms (loop=3)
+average execution time: 699.10ms (loop=3)
 ```
 <!--
 - `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000

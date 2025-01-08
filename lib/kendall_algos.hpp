@@ -265,7 +265,10 @@ namespace FastCorr {
 
       std::vector<std::pair<TY, int>> ys(n);
       for (int i=0; i<n; ++i) ys[i] = std::make_pair(sorted[i].second, i);
-      sort(ys.begin(), ys.end()); // O(nlogn)
+      sort(ys.begin(), ys.end(), // O(nlogn)
+          [&](std::pair<TY, int> i, std::pair<TY, int> j) {
+            return i.first < j.first; // this is faster: order of the second values does not matter
+          });
 
       std::vector<int> sorted_cmp(n); // compress TY -> int [0,H)
       int H = 0;

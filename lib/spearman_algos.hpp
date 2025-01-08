@@ -168,14 +168,17 @@ namespace FastCorr {
           auto p = _add_value(x_val);
           int z = p.first, dup = p.second;
 
+          //assert(tree.size(root) == N);
+          // [0, z) | [z, z+dup)  |  insert  | [z+dup, N)
+          //   +0   |     +1      | (new_d1) |     +2
+          auto pairs = tree.split3(root, z, z+dup);
+          auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
+          if (p2) tree.propagate(p2, +1);
+          if (p3) tree.propagate(p3, +2);
           // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
           sp_d1_type new_d1 = (z-N)*2 + dup; // *= 2
-
-          //assert(tree.size(root) == N);
-          // add +1(*2) to [z+dup, N) & add  +0.5(*2) to [z, z+dup)
-          if (z+dup < N) tree.apply(root, z+dup, N, +1*2); // +1(*2) to [z+dup, N)
-          if (dup > 0)   tree.apply(root, z, z+dup, +1); // +0.5(*2) to [z, z+dup)
-          tree.insert(root, z+dup, new_d1, (sp_d2_type)new_d1*new_d1); // insert new element @ z+dup
+          auto p_new = tree.my_new(new_d1, (sp_d2_type)new_d1*new_d1);
+          root = tree.merge4(p1, p2, p_new, p3);
           N += 1;
         }
         // add a new element
@@ -184,13 +187,16 @@ namespace FastCorr {
           auto p = _add_value(x_val);
           int z = p.first, dup = p.second;
 
+          // [0, z) |  insert  | [z, z+dup) | [z+dup, N)
+          //   -2   | (new_d1) |     -1     |     +0
+          auto pairs = tree.split3(root, z, z+dup);
+          auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
+          if (p1) tree.propagate(p1, -2);
+          if (p2) tree.propagate(p2, -1);
           // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
           sp_d1_type new_d1 = (z-0)*2 + dup; // *= 2
-
-          //assert(tree.size(root) == N);
-          if (dup > 0) tree.apply(root, z, z+dup, -1); // [z, z+dup) -= 0.5(*2)
-          if (z > 0)   tree.apply(root, 0, z, -1*2); // [0, z) -= 1(*2) (y += 1)
-          tree.insert(root, z, new_d1, (sp_d2_type)new_d1*new_d1); // insert new element @ z
+          auto p_new = tree.my_new(new_d1, (sp_d2_type)new_d1*new_d1);
+          root = tree.merge4(p1, p_new, p2, p3);
           N += 1;
         }
         // remove an oldest element
@@ -200,9 +206,15 @@ namespace FastCorr {
           auto p = _remove_value(x_val);
           int z = p.first, dup = p.second;
 
-          tree.erase(root, z); // erase @z
-          if (z>0)   tree.apply(root, 0, z, +1*2); // [0, z) += 1 (*2)
-          if (dup>0) tree.apply(root, z, z+dup, +1); // [z, z+dup) += 0.5(*2) (y-=1, x-=0.5)
+          // [0, z) |  [z]  | [z+1, z+dup+1) | [z+dup+1, N)
+          //   +2   | erase |        +1      |      +0
+          auto pairs = tree.split3(root, z, z+dup+1);
+          auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
+          auto pp = tree.split(p2, 1); p2 = pp.second;
+          tree.my_del(pp.first); // erase @z
+          if (p1) tree.propagate(p1, +2);
+          if (p2) tree.propagate(p2, +1); // y-=1, x-=0.5
+          root = tree.merge3(p1, p2, p3);
           N -= 1;
         }
         // remove an oldest element
@@ -212,9 +224,15 @@ namespace FastCorr {
           auto p = _remove_value(x_val);
           int z = p.first, dup = p.second;
 
-          tree.erase(root, z+dup); // erase @z+dup
-          if (dup>0)       tree.apply(root, z, z+dup, -1);     // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
-          if (z+dup < N-1) tree.apply(root, z+dup, N-1, -1*2); // [z+dup, )  -= 1(*2)
+          // [0, z) | [z, z+dup) | [z+dup] | [z+dup+1, N)
+          //   +0   |     -1     |  erase  |      +0
+          auto pairs = tree.split3(root, z, z+dup);
+          auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
+          auto pp = tree.split(p3, 1); p3 = pp.second;
+          tree.my_del(pp.first); // erase @z+dup
+          if (p2) tree.propagate(p2, -1); // (y-=0, x-=0.5)
+          if (p3) tree.propagate(p3, -2);
+          root = tree.merge3(p1, p2, p3);
           N -= 1;
         }
         sp_d2_type spearman_d() const noexcept override { return tree.sum_d2(root); }

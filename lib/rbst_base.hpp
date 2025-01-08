@@ -55,6 +55,19 @@ namespace FastCorr {
       }
     }
 
+    std::pair<Ptr, std::pair<Ptr, Ptr> > split3(Ptr t, int k1, int k2) {
+      auto s = split(t, k2);
+      auto s2 = split(s.first, k1);
+      return {s2.first, {s2.second, s.second}};
+    }
+
+    Ptr merge3(Ptr t1, Ptr t2, Ptr t3) {
+      return merge(merge(t1, t2), t3);
+    }
+    Ptr merge4(Ptr t1, Ptr t2, Ptr t3, Ptr t4) {
+      return merge(merge(t1, t2), merge(t3, t4));
+    }
+
     Ptr build(int l, int r, const std::vector<decltype(Node::key_d1)> &v) {
       if (l + 1 == r) return my_new(v[l]);
       int m = (l + r) >> 1;
