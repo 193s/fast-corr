@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: compile_test
-      run: C_COMPILER='g++ --std=c++14' make compile_test
+      run: C_COMPILER='clang++ --std=c++14' make compile_test && C_COMPILER='g++ --std=c++14' make compile_test
     - name: make all
       run: C_COMPILER='g++ --std=c++14' make all
     - name: benchmark
