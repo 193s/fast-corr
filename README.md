@@ -61,7 +61,7 @@ The result may contain errors incurred by arhithmetic operations of double datat
 | FastCorr::OfflineCorr::kendall\_tau\<TX, TY\> | O(NlogN) |
 | FastCorr::OfflineCorr::pearson\_r        | O(N)     |
 
-This is nothing new, just a very straightforward set of implementations.  
+This is nothing new, just a very straightforward set of implementations. The Kendall implementation is comparatively more efficient.  
 - `double FastCorr::OfflineCorr::spearman_r<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
 - `double FastCorr::OfflineCorr::kendall_tau<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
 - `double FastCorr::OfflineCorr::pearson_r(const vector<double> &x_vals, const vector<double> &y_vals)`

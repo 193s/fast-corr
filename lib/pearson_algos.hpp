@@ -15,7 +15,7 @@ namespace FastCorr {
       corr_type sum_X = 0, sum_Y = 0, sum_XY = 0;
       corr_type sum_X2 = 0, sum_Y2 = 0;
 
-      for (int i=0; i<n; i++) {
+      for (int i=0; i<n; ++i) {
         sum_X += X[i];
         sum_Y += Y[i];
         sum_XY += X[i]*Y[i];

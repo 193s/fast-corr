@@ -32,10 +32,10 @@ namespace FastCorr {
       std::sort(xs.begin(), xs.end());
       int ctr_same = 1, n = xs.size();
       sp_d2_type ret = 0;
-      for (int i=1; i<n; i++) {
+      for (int i=1; i<n; ++i) {
         if (xs[i-1] != xs[i]) ctr_same = 0;
         ret += (sp_d2_type)3*ctr_same*(ctr_same+1);
-        ctr_same++;
+        ++ctr_same;
       }
       return ret;
     };
@@ -92,21 +92,21 @@ namespace FastCorr {
     if (FAST_CORR_UNLIKELY(n == 1)) return {2};
     // n>=2
     std::vector<std::pair<T, int> > X2(n);
-    for (int i=0; i<n; i++) X2[i] = std::pair<T, int>(X[i], i);
+    for (int i=0; i<n; ++i) X2[i] = std::pair<T, int>(X[i], i);
     std::sort(X2.begin(), X2.end()); // O(nlogn)
     std::vector<int> ret(n);
-    //for (int i=0; i<n; i++) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
+    //for (int i=0; i<n; ++i) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
     int z = 0, head = 0;
-    for (int i=1; i<n; i++) {
+    for (int i=1; i<n; ++i) {
       if (X2[i-1].first != X2[i].first) {
         // finalize rank
         int rank = z*2 + 1 + (i-head); // 1 + z + (number of same values - 1)/2
         z += i-head;
-        for (; head<i; head++) ret[X2[head].second] = rank;
+        for (; head<i; ++head) ret[X2[head].second] = rank;
       }
     }
     int last_rank = z*2 + 1 + (n-head); // 1 + z + (number of same values - 1)/2
-    for (; head<n; head++) ret[X2[head].second] = last_rank;
+    for (; head<n; ++head) ret[X2[head].second] = last_rank;
     return ret;
   }
 
@@ -255,23 +255,23 @@ namespace FastCorr {
         void push_back(const T &x_val) override {
           int dup = _add_value(x_val);
           int z = 0;
-          for (T &x : X_val) if (x < x_val) z++;
+          for (T &x : X_val) if (x < x_val) ++z;
           X_val.push_back(x_val);
           D.push_back(0);
-          for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i] + 2; // [z+dup, N) += 1(*2)
-          for (int i=z+dup-1; i>=z; i--) D[i] = D[i] + 1;   // [z, z+dup) += 0.5(*2) (& insert@z+dup)
+          for (int i=N-1; i>=z+dup; --i) D[i+1] = D[i] + 2; // [z+dup, N) += 1(*2)
+          for (int i=z+dup-1; i>=z; --i) D[i] = D[i] + 1;   // [z, z+dup) += 0.5(*2) (& insert@z+dup)
           D[z+dup] = (z - N)*2 + dup; // D_i := X_i - Y_i (*2)
           N += 1;
         }
         void push_front(const T &x_val) override {
           int dup = _add_value(x_val);
           int z = 0;
-          for (T &x : X_val) if (x < x_val) z++;
+          for (T &x : X_val) if (x < x_val) ++z;
           X_val.push_front(x_val);
           D.push_back(0);
-          for (int i=N-1; i>=z+dup; i--) D[i+1] = D[i];     // [z+dup, N) += 0 (*2) (x += 1, y += 1)
-          for (int i=z+dup-1; i>=z; i--) D[i+1] = D[i] - 1; // [z, z+dup) += 0.5-1(*2) (& insert@z)
-          for (int i=z-1; i>=0; i--)     D[i] -= 2;         // [0, z) -= 1(*2) (y += 1)
+          for (int i=N-1; i>=z+dup; --i) D[i+1] = D[i];     // [z+dup, N) += 0 (*2) (x += 1, y += 1)
+          for (int i=z+dup-1; i>=z; --i) D[i+1] = D[i] - 1; // [z, z+dup) += 0.5-1(*2) (& insert@z)
+          for (int i=z-1; i>=0; --i)     D[i] -= 2;         // [0, z) -= 1(*2) (y += 1)
           D[z] = (z - 0)*2 + dup; // D_i := X_i - Y_i (*2)
           N += 1;
         }
@@ -280,10 +280,10 @@ namespace FastCorr {
           T x_val = X_val.front();
           int dup = _remove_value(x_val);
           int z = 0;
-          for (T &x : X_val) if (x < x_val) z++;
-          for (int i=0; i<z; i++)       D[i] += 2;         // [0, z) += 1 (*2)
-          for (int i=z; i<z+dup; i++)   D[i] = D[i+1] + 1; // erase @z & [z, z+dup) += 0.5(*2)
-          for (int i=z+dup; i<N-1; i++) D[i] = D[i+1];
+          for (T &x : X_val) if (x < x_val) ++z;
+          for (int i=0; i<z; ++i)       D[i] += 2;         // [0, z) += 1 (*2)
+          for (int i=z; i<z+dup; ++i)   D[i] = D[i+1] + 1; // erase @z & [z, z+dup) += 0.5(*2)
+          for (int i=z+dup; i<N-1; ++i) D[i] = D[i+1];
           N -= 1;
           X_val.pop_front();
           D.pop_back();
@@ -292,16 +292,16 @@ namespace FastCorr {
           T x_val = X_val.back();
           int dup = _remove_value(x_val);
           int z = 0;
-          for (T &x : X_val) if (x < x_val) z++;
-          for (int i=z; i<z+dup; i++)   D[i] -= 1;         // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
-          for (int i=z+dup; i<N-1; i++) D[i] = D[i+1] - 2; // erase@z+dup & [z+dup, ) -= 1(*2)
+          for (T &x : X_val) if (x < x_val) ++z;
+          for (int i=z; i<z+dup; ++i)   D[i] -= 1;         // [z, z+dup) -= 0.5(*2) (y-=0, x-=0.5)
+          for (int i=z+dup; i<N-1; ++i) D[i] = D[i+1] - 2; // erase@z+dup & [z+dup, ) -= 1(*2)
           N -= 1;
           X_val.pop_back();
           D.pop_back();
         }
         sp_d2_type spearman_d() const noexcept override {
           sp_d2_type d = 0;
-          for (int i=0; i<N; i++) d += (sp_d2_type)D[i]*D[i];
+          for (int i=0; i<N; ++i) d += (sp_d2_type)D[i]*D[i];
           return d;
         }
         size_t size() const noexcept override { return N; }
@@ -330,18 +330,18 @@ namespace FastCorr {
         }
         void pop_front() override {
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
-          min_y_ctr++;
+          ++min_y_ctr;
           vals.pop_front();
         }
         void pop_back() override {
-          max_y_ctr--;
+          --max_y_ctr;
           vals.pop_back();
         }
         size_t size() const noexcept override { return vals.size(); }
         sp_d2_type spearman_d() const noexcept override {
           int n = vals.size();
           std::vector<T> xs(n);
-          for (int i=0; i<n; i++) xs[i] = vals[i].first;
+          for (int i=0; i<n; ++i) xs[i] = vals[i].first;
           SpearmanBase<T>::Gx = OfflineCorr::offline_n3_counter(xs);
           return OfflineCorr::spearman_d(vals);
         }
@@ -368,8 +368,8 @@ namespace FastCorr {
       int n = vals.size();
       std::vector<TX> x_vals(n);
       std::vector<TY> y_vals(n);
-      for (int i=0; i<n; i++) x_vals[i] = vals[i].first;
-      for (int i=0; i<n; i++) y_vals[i] = vals[i].second;
+      for (int i=0; i<n; ++i) x_vals[i] = vals[i].first;
+      for (int i=0; i<n; ++i) y_vals[i] = vals[i].second;
       return spearman_r(x_vals, y_vals);
     }
     // O(NlogN) offline spearman: wrapper for deque
@@ -387,7 +387,7 @@ namespace FastCorr {
       std::vector<int> X = rankdata(x_vals);
       std::vector<int> Y = rankdata(y_vals);
       sp_d2_type d = 0;
-      for (int i=0; i<n; i++) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
+      for (int i=0; i<n; ++i) d += (sp_d2_type)(X[i]-Y[i])*(X[i]-Y[i]);
       return d;
     }
     // wrapper for list of pairs
@@ -396,8 +396,8 @@ namespace FastCorr {
       int n = vals.size();
       std::vector<TX> x_vals(n);
       std::vector<TY> y_vals(n);
-      for (int i=0; i<n; i++) x_vals[i] = vals[i].first;
-      for (int i=0; i<n; i++) y_vals[i] = vals[i].second;
+      for (int i=0; i<n; ++i) x_vals[i] = vals[i].first;
+      for (int i=0; i<n; ++i) y_vals[i] = vals[i].second;
       return spearman_d(x_vals, y_vals);
     }
     // wrapper for deque

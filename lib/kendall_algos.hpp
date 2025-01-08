@@ -25,7 +25,7 @@ namespace FastCorr {
       if (!already_sorted) std::sort(xs.begin(), xs.end());
       int ctr_same = 1, n = xs.size();
       kd_n2_type ret = 0;
-      for (int i=1; i<n; i++) {
+      for (int i=1; i<n; ++i) {
         if (xs[i-1] != xs[i]) ctr_same = 0;
         ret += ctr_same++;
       }
@@ -95,7 +95,7 @@ namespace FastCorr {
         void pop_front() override {
           auto z = vals.front();
           T x_val = z.first;
-          min_y_ctr++;
+          ++min_y_ctr;
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
           vals.pop_front();
           int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, 0u));
@@ -114,7 +114,7 @@ namespace FastCorr {
         }
         void pop_back() override {
           auto z = vals.back();
-          max_y_ctr--;
+          --max_y_ctr;
           T x_val = z.first;
           vals.pop_back();
           int num_lower = ctr_tree.order_of_key(std::make_pair(x_val, 0u));
@@ -153,11 +153,11 @@ namespace FastCorr {
         }
         void pop_front() override {
           // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
-          min_y_ctr++;
+          ++min_y_ctr;
           vals.pop_front();
         }
         void pop_back() override {
-          max_y_ctr--;
+          --max_y_ctr;
           vals.pop_back();
         }
         // O(NlogN) efficient offline algorithm (tau-b)
@@ -193,11 +193,11 @@ namespace FastCorr {
         }
         void add(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
-          N++;
+          ++N;
         }
         void remove(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
-          N--;
+          --N;
         }
         corr_type r() const noexcept override {
           return 0;
@@ -251,7 +251,7 @@ namespace FastCorr {
       assert(x_vals.size() == y_vals.size());
       int n = x_vals.size();
       std::vector<std::pair<TX, TY> > vals;
-      for (int i=0; i<n; i++) vals.push_back(std::make_pair(x_vals[i], y_vals[i]));
+      for (int i=0; i<n; ++i) vals.push_back(std::make_pair(x_vals[i], y_vals[i]));
       return kendall_tau(vals);
     }
 
@@ -264,29 +264,29 @@ namespace FastCorr {
       const kd_n2_type n0 = (kd_n2_type)n*(n-1)/2;
 
       std::vector<std::pair<TY, int>> ys(n);
-      for (int i=0; i<n; i++) ys[i] = std::make_pair(sorted[i].second, i);
+      for (int i=0; i<n; ++i) ys[i] = std::make_pair(sorted[i].second, i);
       sort(ys.begin(), ys.end()); // O(nlogn)
 
       std::vector<int> sorted_cmp(n); // compress TY -> int [0,H)
       int H = 0;
-      for (int i=0; i<n; i++) {
-        if (i > 0 && ys[i-1].first != ys[i].first) H++;
+      for (int i=0; i<n; ++i) {
+        if (i > 0 && ys[i-1].first != ys[i].first) ++H;
         sorted_cmp[ys[i].second] = H;
       }
-      H++;
+      ++H;
       kd_n2_type n1 = 0, n2 = 0;
 
       BinaryIndexedTree bit(H);
       std::vector<int> ctr(H, 0);
       int head = 0;
-      for (int i=0; i<n; i++) {
+      for (int i=0; i<n; ++i) {
         if (i > 0 && sorted[i-1].first != sorted[i].first) {
           int c = i-head;
           n1 += (kd_n2_type)c*(c-1)/2;
-          for (; head<i; head++) {
+          for (; head<i; ++head) {
             int yi = sorted_cmp[head];
             bit.add(yi, 1); // add y
-            ctr[yi]++;
+            ++ctr[yi];
           }
           // head = i
         }
@@ -296,7 +296,7 @@ namespace FastCorr {
       }
       int last_c = n-head;
       n1 += (kd_n2_type)last_c*(last_c-1)/2;
-      for (int i=0; i<H; i++) n2 += (kd_n2_type)ctr[i]*(ctr[i]-1);
+      for (int i=0; i<H; ++i) n2 += (kd_n2_type)ctr[i]*(ctr[i]-1);
       n2 /= 2;
 
       if (FAST_CORR_UNLIKELY(n1 == n0 || n2 == n0)) return NAN; // denominator will be 0 on tau-b and tau-c
