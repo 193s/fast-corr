@@ -12,11 +12,11 @@ namespace FastCorr {
   namespace OfflineCorr {
     // O(NlogN) offline algorithm (spearman-r)
     template< class TX, class TY >
-    double spearman_r(const std::vector< std::pair<TX, TY> > &vals);
+    corr_type spearman_r(const std::vector< std::pair<TX, TY> > &vals);
     template< class TX, class TY >
-    double spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals);
+    corr_type spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals);
     template< class TX, class TY >
-    double spearman_r(const std::deque< std::pair<TX, TY> > &vals);
+    corr_type spearman_r(const std::deque< std::pair<TX, TY> > &vals);
 
     template< class TX, class TY >
     sp_d2_type spearman_d(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals);
@@ -43,32 +43,37 @@ namespace FastCorr {
 // ===== Helper functions =========================================================== //
 
 namespace FastCorr {
-  double spearman_r_from_n_4d_Gx_and_Gy(int n, sp_d2_type d, sp_d2_type Gx, sp_d2_type Gy) {
+  corr_type spearman_r_from_n_4d_Gx_and_Gy(int n, sp_d2_type d, sp_d2_type Gx, sp_d2_type Gy) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
-    if      (Gx == n3 || Gy == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Gx == 0  && Gy == 0 ) return 1.0 - 1.5*d / n3;
+    if (Gx == n3 || Gy == n3) return NAN; // rank X_i can not be defined in this case
+    else if (Gx == 0  && Gy == 0)
+      return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
       // general formula:
       // (Sx + Sy - D) / (2 * sqrt(Sx) * sqrt(Sy)), Sx := (n3-Gx)/12, Sy := (n3-Gy)/12
       // = (12*Sx + 12*Sy - 12*D) / (2 * sqrt(n3-Gx) * sqrt(n3-Gy))
       // = (2*n3 - Gx - Gy - 12*D) / (2 * sqrt(n3-Gx) * sqrt(n3-Gy))
       // = (2*n3 - Gx - Gy - 3*(4D)) / (2 * n3 * sqrt(1-Gx/n3) * sqrt(1-Gy/n3))
-      return (2.0*n3 - Gx - Gy - 3.0*d) /
-        (2.0 * n3 * sqrt(1.0-(double)Gx/(double)n3) * sqrt(1.0-(double)Gy/(double)n3));
+      return ((corr_type)2.0*(corr_type)n3 - (corr_type)Gx - (corr_type)Gy - (corr_type)3.0*d) / (
+          (corr_type)2.0 * (corr_type)n3
+          * sqrt((corr_type)1.0 - (corr_type)Gx/(corr_type)n3)
+          * sqrt((corr_type)1.0 - (corr_type)Gy/(corr_type)n3));
     }
   }
   // special case when Gy = 0
-  double spearman_r_from_n_4d_and_Gx(int n, sp_d2_type d, sp_d2_type Gx) {
+  corr_type spearman_r_from_n_4d_and_Gx(int n, sp_d2_type d, sp_d2_type Gx) {
     //if (n <= 1) return NAN;
     sp_d2_type n3 = (sp_d2_type)n*((sp_d2_type)n*n-1);
     if      (Gx == n3) return NAN; // rank X_i can not be defined in this case
-    else if (Gx == 0 ) return 1.0 - 1.5*d / n3;
+    else if (Gx == 0 ) return (corr_type)1.0 - (corr_type)1.5*(corr_type)d / (corr_type)n3;
     else {
       // when Gy = 0,
       // = (2*n3 - 3*(4D) - Gx - Gy) / (2*n3*(sqrt(1 - Gx/n3) * sqrt(1-Gy/n3)))
       // = (2*n3 - 3*(4D) - Gx) / (2*n3*(sqrt(1 - Gx/n3))
-      return (2.0*n3 - Gx - 3.0*d) / (2.0*n3*sqrt(1.0 - (double)Gx/(double)n3));
+      return ((corr_type)2.0*(corr_type)n3 - (corr_type)Gx - (corr_type)3.0*d) / (
+          (corr_type)2.0 * (corr_type)n3
+          * sqrt((corr_type)1.0 - (corr_type)Gx/(corr_type)n3));
     }
   }
 
@@ -111,11 +116,11 @@ namespace FastCorr {
       public:
         virtual sp_d2_type spearman_d() const = 0;
         virtual size_t size() const = 0;
-        double spearman_r() const {
+        corr_type spearman_r() const {
           sp_d2_type d = spearman_d(); // d = sum[i=1..n]((2d_i)^2) = 4*actual_D
           return spearman_r_from_n_4d_and_Gx(size(), d, Gx);
         }
-        double r() const override { return spearman_r(); } // r() is an alias for spearman_r()
+        corr_type r() const override { return spearman_r(); } // r() is an alias for spearman_r()
       protected:
         mutable sp_d2_type Gx = 0; // sum(t_i^3 - t_i)
         // Gy = 0 under monotonic constraints
@@ -356,7 +361,7 @@ namespace FastCorr {
   namespace OfflineCorr {
     // O(NlogN) spearman algorithm
     template< class TX, class TY >
-    double spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
+    corr_type spearman_r(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
       int n = x_vals.size();
       sp_d2_type d = spearman_d(x_vals, y_vals);
 
@@ -367,7 +372,7 @@ namespace FastCorr {
     }
     // wrapper for list of pairs
     template< class TX, class TY >
-    double spearman_r(const std::vector< std::pair<TX, TY> > &vals) {
+    corr_type spearman_r(const std::vector< std::pair<TX, TY> > &vals) {
       int n = vals.size();
       std::vector<TX> x_vals(n);
       std::vector<TY> y_vals(n);
@@ -377,7 +382,7 @@ namespace FastCorr {
     }
     // O(NlogN) offline spearman: wrapper for deque
     template< class TX, class TY >
-    double spearman_r(const std::deque< std::pair<TX, TY> > &vals) {
+    corr_type spearman_r(const std::deque< std::pair<TX, TY> > &vals) {
       std::vector< std::pair<TX, TY> > vals2(vals.begin(), vals.end());
       return spearman_r(vals2);
     }

@@ -11,10 +11,10 @@ namespace FastCorr {
   namespace OfflineCorr {
     // O(NlogN) efficient offline algorithm (tau-b)
     template< class TX, class TY >
-    double kendall_tau(const std::vector< std::pair<TX, TY> > &vals);
+    corr_type kendall_tau(const std::vector< std::pair<TX, TY> > &vals);
     // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
     template< class TX, class TY >
-    double kendall_tau(const std::deque< std::pair<TX, TY> > &vals);
+    corr_type kendall_tau(const std::deque< std::pair<TX, TY> > &vals);
 
     // Calculating sum[i] t_i*(t_i-1)/2 - this is faster than using std::map
     template< class T >
@@ -54,8 +54,8 @@ namespace FastCorr {
     template< class T >
     class KendallBase : public Base<T> {
       public:
-        virtual double kendall_tau() const = 0;
-        double r() const override { return kendall_tau(); } // r() is an alias for kendall_tau()
+        virtual corr_type kendall_tau() const = 0;
+        corr_type r() const override { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
     template< class T >
@@ -122,12 +122,13 @@ namespace FastCorr {
           L -= ctr_tree.size() - ctr_tree.order_of_key(std::make_pair(x_val, id_for_tree));
           _remove_value(x_val);
         }
-        double kendall_tau() const override {
+        corr_type kendall_tau() const override {
           int N = vals.size();
           kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
           // n2 = 0 because y_i has no duplicate values
           if (n1 == n0) return NAN; // denominator will be 0 on tau-b/c
-          return (double)(K-L) / sqrt((double)(n0-n1)*(double)n0); // tau-b (n2=0)
+          return (corr_type)(K-L) / (
+              (corr_type)n0 * sqrt((corr_type)1.0-(corr_type)n1/(corr_type)n0)); // tau-b (n2=0)
         }
         size_t size() const override { return vals.size(); }
     };
@@ -158,7 +159,7 @@ namespace FastCorr {
           vals.pop_back();
         }
         // O(NlogN) efficient offline algorithm (tau-b)
-        double kendall_tau() const override {
+        corr_type kendall_tau() const override {
           return OfflineCorr::kendall_tau(vals);
           //return OfflineCorr::slow_kendall_tau<T>(vals);
         }
@@ -172,7 +173,7 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual double r() const = 0;
+        virtual corr_type r() const = 0;
         virtual size_t size() const = 0;
     };
 
@@ -189,7 +190,7 @@ namespace FastCorr {
         void remove(const int &x_val, const TY &y_val) override {
           N--;
         }
-        double r() const override {
+        corr_type r() const override {
           return 0;
         }
         size_t size() const override {
@@ -203,25 +204,25 @@ namespace FastCorr {
   namespace OfflineCorr {
     // internal function
     template< class TX, class TY >
-    double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted);
+    corr_type internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted);
 
     // O(NlogN) efficient offline algorithm (tau-b)
     template< class TX, class TY >
-    double kendall_tau(const std::vector< std::pair<TX, TY> > &vals) {
+    corr_type kendall_tau(const std::vector< std::pair<TX, TY> > &vals) {
       std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
       std::sort(sorted.begin(), sorted.end()); // O(nlogn)
       return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
     }
     // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
     template< class TX, class TY >
-    double kendall_tau(const std::deque< std::pair<TX, TY> > &vals) {
+    corr_type kendall_tau(const std::deque< std::pair<TX, TY> > &vals) {
       std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
       std::sort(sorted.begin(), sorted.end()); // O(nlogn)
       return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
     }
     // wrapper for two vectors
     template< class TX, class TY >
-    double kendall_tau(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
+    corr_type kendall_tau(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
       assert(x_vals.size() == y_vals.size());
       int n = x_vals.size();
       std::vector<std::pair<TX, TY> > vals;
@@ -231,7 +232,7 @@ namespace FastCorr {
 
     // internal function
     template< class TX, class TY >
-    double internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted) {
+    corr_type internal_kendall_tau_on_sorted_pairs(const std::vector< std::pair<TX, TY> > &sorted) {
       const int n = sorted.size();
       if (n <= 1) return NAN;
       kd_n2_type K = 0, L = 0;
@@ -276,7 +277,9 @@ namespace FastCorr {
       if (n1 == n0 || n2 == n0) return NAN; // denominator will be 0 on tau-b and tau-c
       // return (double)(K-L) / (double)n0; // tau-a
       //for (auto p : vals) { cout<<"("<<p.first<<", "<<p.second<<"),"; } cout<<" -> tau = "<< (double)(K-L) <<"/"<< sqrt((n0-n1)*(n0-n2)) << "\n";
-      return (double)(K-L) / sqrt((double)(n0-n1)*(double)(n0-n2)); // tau-b
+      return (corr_type)(K-L) / ((corr_type)n0 * sqrt(
+             ((corr_type)1.0-(corr_type)n1/(corr_type)n0)
+            *((corr_type)1.0-(corr_type)n2/(corr_type)n0))); // tau-b
       //int m = min(ctr_X.size(), ctr_Y.size());
       //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
     }

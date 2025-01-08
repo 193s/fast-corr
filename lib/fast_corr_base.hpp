@@ -22,7 +22,12 @@ namespace FastCorr {
   // typedef long corr_result_type; // type used for correlation coefficients ([-1, 1] or NAN)
   //                                // options are: double, float, ...
 
-  double spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx);
+  // -- type definitions for correlation results --
+  typedef double corr_type; // data type used to store correlation coefficients
+                            // options are: double, float, long double
+                            // (std::sqrt needs to be defined on corr_type)
+
+  corr_type spearman_r_from_n_4d_and_Sx(int n, sp_d2_type d, sp_d2_type Sx);
   /**
    * @brief A module for online correlation algorithms on partial monotonicity constraints
    */
@@ -35,7 +40,7 @@ namespace FastCorr {
         virtual void pop_front() = 0;
         virtual void pop_back() = 0;
         virtual size_t size() const = 0;
-        virtual double r() const = 0;
+        virtual corr_type r() const = 0;
     };
   }
 
@@ -48,7 +53,7 @@ namespace FastCorr {
       public:
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual double r() const = 0;
+        virtual corr_type r() const = 0;
         virtual size_t size() const = 0;
     };
   }
