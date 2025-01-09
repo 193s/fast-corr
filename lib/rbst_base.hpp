@@ -26,15 +26,19 @@ namespace FastCorr {
     Ptr make_tree() {return Ptr();}
     */
 
-    inline int size(const Ptr t) const noexcept { return count(t); }
+    inline int count(const Ptr t) const noexcept { return t ? t->cnt : 0; }
+    inline int size (const Ptr t) const noexcept { return count(t); }
 
     Ptr merge(Ptr l, Ptr r) {
-      if (!l || !r) return l ? l : r;
+      if (!l) return r;
+      if (!r) return l;
       if (int((rng() * (l->cnt + r->cnt)) >> 32) < l->cnt) {
+      //if ((int)(rng() % (uint64_t)(l->cnt + r->cnt)) < l->cnt) {
         push(l);
         l->r = merge(l->r, r);
         return update(l);
-      } else {
+      }
+      else {
         push(r);
         r->l = merge(l, r->l);
         return update(r);
@@ -48,17 +52,48 @@ namespace FastCorr {
         auto s = split(t->l, k);
         t->l = s.second;
         return {s.first, update(t)};
-      } else {
+      }
+      else {
         auto s = split(t->r, k - count(t->l) - 1);
         t->r = s.first;
         return {update(t), s.second};
       }
     }
 
+    // this is equivalent to split(t, 1) but a bit faster
+    std::pair<Ptr, Ptr> split_by_first_element(Ptr t) {
+      if (FAST_CORR_UNLIKELY(!t)) return {nullptr, nullptr};
+      push(t);
+      if (FAST_CORR_LIKELY((t->l) != nullptr)) {
+        auto s = split_by_first_element(t->l);
+        t->l = s.second;
+        return {s.first, update(t)};
+      }
+      else { // t->l == NULL
+        if (t->r) {
+          auto s = t->r;
+          t->r = nullptr;
+          return {update(t), s};
+        }
+        else {
+          return {t, nullptr};
+        }
+      }
+    }
+
     std::pair<Ptr, std::pair<Ptr, Ptr> > split3(Ptr t, int k1, int k2) {
-      auto s = split(t, k2);
-      auto s2 = split(s.first, k1);
-      return {s2.first, {s2.second, s.second}};
+      // split (a|b)|c or a|(b|c) : len(a) = k1, len(b) = k2-k1, len(c) = n-k2
+      if (k1 <= count(t)-k2) { // choose the order of two splits to minimize time cost
+        // len(a) <= len(c): split by k2 first
+        auto s = split(t, k2);
+        auto s2 = split(s.first, k1);
+        return {s2.first, {s2.second, s.second}};
+      }
+      else {
+        auto s = split(t, k1);
+        auto s2 = split(s.second, k2-k1);
+        return {s.first, s2};
+      }
     }
 
     Ptr merge3(Ptr t1, Ptr t2, Ptr t3) {
@@ -100,7 +135,6 @@ namespace FastCorr {
       return x_ ^= x_ << 7, x_ ^= x_ >> 9, x_ & 0xFFFFFFFFull;
     }
 
-    inline int count(const Ptr t) const noexcept { return t ? t->cnt : 0; }
     virtual void push(Ptr) = 0;
     virtual Ptr update(Ptr) = 0;
   };

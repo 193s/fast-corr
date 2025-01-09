@@ -36,6 +36,17 @@ namespace FastCorr {
       propagate(y.first, e);
       t = merge(x.first, merge(y.first, y.second));
     }
+    template <const int a_>
+    void propagate_const(Ptr t) {
+      t->lazy += a_;
+      constexpr sp_d2_type a(a_);
+      // add(t->key, x, 1):
+      t->key_d2 += a*((sp_d2_type)2*t->key_d1 + a);
+      t->key_d1 += a_;
+      // add(t->sum, x, t->cnt):
+      t->sum_d2 += a*((sp_d2_type)2*t->sum_d1 + a*(t->cnt)); // d2 += a^2*n + 2*a*d1
+      t->sum_d1 += a*(t->cnt); // d1 += a*n
+    }
     void propagate(Ptr t, const E &a) {
       t->lazy += a;
       // add(t->key, x, 1):

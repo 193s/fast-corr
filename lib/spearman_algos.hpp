@@ -173,8 +173,8 @@ namespace FastCorr {
           //   +0   |     +1      | (new_d1) |     +2
           auto pairs = tree.split3(root, z, z+dup);
           auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
-          if (p2) tree.propagate(p2, +1);
-          if (p3) tree.propagate(p3, +2);
+          if (p2) tree.propagate_const<+1>(p2);
+          if (p3) tree.propagate_const<+2>(p3);
           // new element with (x=z+dup/2, y=N) -> d1 = z-N+(dup/2)
           sp_d1_type new_d1 = (z-N)*2 + dup; // *= 2
           auto p_new = tree.my_new(new_d1, (sp_d2_type)new_d1*new_d1);
@@ -191,8 +191,8 @@ namespace FastCorr {
           //   -2   | (new_d1) |     -1     |     +0
           auto pairs = tree.split3(root, z, z+dup);
           auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
-          if (p1) tree.propagate(p1, -2);
-          if (p2) tree.propagate(p2, -1);
+          if (p1) tree.propagate_const<-2>(p1);
+          if (p2) tree.propagate_const<-1>(p2);
           // new element with (x=z+dup/2, y=0) -> d1 = z-0+(dup/2)
           sp_d1_type new_d1 = (z-0)*2 + dup; // *= 2
           auto p_new = tree.my_new(new_d1, (sp_d2_type)new_d1*new_d1);
@@ -210,10 +210,10 @@ namespace FastCorr {
           //   +2   | erase |        +1      |      +0
           auto pairs = tree.split3(root, z, z+dup+1);
           auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
-          auto pp = tree.split(p2, 1); p2 = pp.second;
+          auto pp = tree.split_by_first_element(p2); p2 = pp.second;
           tree.my_del(pp.first); // erase @z
-          if (p1) tree.propagate(p1, +2);
-          if (p2) tree.propagate(p2, +1); // y-=1, x-=0.5
+          if (p1) tree.propagate_const<+2>(p1);
+          if (p2) tree.propagate_const<+1>(p2); // y-=1, x-=0.5
           root = tree.merge3(p1, p2, p3);
           N -= 1;
         }
@@ -228,10 +228,10 @@ namespace FastCorr {
           //   +0   |     -1     |  erase  |      +0
           auto pairs = tree.split3(root, z, z+dup);
           auto p1 = pairs.first, p2 = pairs.second.first, p3 = pairs.second.second;
-          auto pp = tree.split(p3, 1); p3 = pp.second;
+          auto pp = tree.split_by_first_element(p3); p3 = pp.second;
           tree.my_del(pp.first); // erase @z+dup
-          if (p2) tree.propagate(p2, -1); // (y-=0, x-=0.5)
-          if (p3) tree.propagate(p3, -2);
+          if (p2) tree.propagate_const<-1>(p2); // (y-=0, x-=0.5)
+          if (p3) tree.propagate_const<-2>(p3);
           root = tree.merge3(p1, p2, p3);
           N -= 1;
         }
@@ -273,7 +273,7 @@ namespace FastCorr {
           int z = 0;
           for (T &x : X_val) if (x < x_val) ++z;
           X_val.push_back(x_val);
-          D.push_back(0);
+          D.emplace_back(0);
           for (int i=N-1; i>=z+dup; --i) D[i+1] = D[i] + 2; // [z+dup, N) += 1(*2)
           for (int i=z+dup-1; i>=z; --i) D[i] = D[i] + 1;   // [z, z+dup) += 0.5(*2) (& insert@z+dup)
           D[z+dup] = (z - N)*2 + dup; // D_i := X_i - Y_i (*2)
@@ -284,7 +284,7 @@ namespace FastCorr {
           int z = 0;
           for (T &x : X_val) if (x < x_val) ++z;
           X_val.push_front(x_val);
-          D.push_back(0);
+          D.emplace_back(0);
           for (int i=N-1; i>=z+dup; --i) D[i+1] = D[i];     // [z+dup, N) += 0 (*2) (x += 1, y += 1)
           for (int i=z+dup-1; i>=z; --i) D[i+1] = D[i] - 1; // [z, z+dup) += 0.5-1(*2) (& insert@z)
           for (int i=z-1; i>=0; --i)     D[i] -= 2;         // [0, z) -= 1(*2) (y += 1)
