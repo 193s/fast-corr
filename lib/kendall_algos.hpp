@@ -250,8 +250,8 @@ namespace FastCorr {
     corr_type kendall_tau(const std::vector<TX> &x_vals, const std::vector<TY> &y_vals) {
       assert(x_vals.size() == y_vals.size());
       int n = x_vals.size();
-      std::vector<std::pair<TX, TY> > vals;
-      for (int i=0; i<n; ++i) vals.push_back(std::make_pair(x_vals[i], y_vals[i]));
+      std::vector<std::pair<TX, TY> > vals(n);
+      for (int i=0; i<n; ++i) vals[i] = std::make_pair(x_vals[i], y_vals[i]);
       return kendall_tau(vals);
     }
 
