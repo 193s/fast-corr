@@ -59,7 +59,6 @@ namespace FastCorr {
     inline sp_d2_type sum_d2(const Ptr t) const noexcept { return t ? t->sum_d2 : sp_d2_type(); }
     protected:
       Ptr update(Ptr t) override {
-        push(t);
         t->cnt = 1;
         t->sum_d1 = t->key_d1;
         t->sum_d2 = t->key_d2;
