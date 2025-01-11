@@ -10,16 +10,6 @@
 #include "fast_corr_base.hpp"
 
 namespace FastCorr {
-  namespace OnlineCorr {
-    template< class TX, class TY >
-    class Kendall : public Base<TX, TY> {
-      public:
-        virtual void add(const TX &x_val, const TY &y_val) = 0;
-        virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual corr_type r() const noexcept = 0;
-        virtual size_t size() const noexcept = 0;
-    };
-  }
   namespace OfflineCorr {
     // O(NlogN) efficient offline algorithm (tau-b)
     template< class TX, class TY >
@@ -63,6 +53,7 @@ namespace FastCorr {
   // ===== Online Algorithms ========================================================== //
 
   namespace MonotonicOnlineCorr {
+    /** Base class for Monotonic Kendall */
     template< class T >
     class KendallBase : public Base<T> {
       public:
@@ -70,6 +61,10 @@ namespace FastCorr {
         corr_type r() const noexcept override { return kendall_tau(); } // r() is an alias for kendall_tau()
     };
 
+    /** O(logN) Monotonic Online Kendall
+     * Time complexity: O(logN) each
+     * Space complexity: O(N) overall
+     */
     template< class T >
     class Kendall : public KendallBase<T> {
       CountingTree< std::pair<T, unsigned int> > ctr_tree;
@@ -144,42 +139,17 @@ namespace FastCorr {
         }
         size_t size() const noexcept override { return vals.size(); }
     };
-
-
-    template< class T >
-    class OfflineKendallForBenchmark : public KendallBase<T> {
-      int min_y_ctr = 0, max_y_ctr = 0;
-      std::deque<std::pair<T, T> > vals;
-
-      public:
-        OfflineKendallForBenchmark() {}
-        OfflineKendallForBenchmark(const std::vector<T> &x_vals) {
-          for (auto &x : x_vals) push_back(x);
-        }
-        void push_back(const T &x_val) override {
-          vals.push_back(std::make_pair(x_val, max_y_ctr++));
-        }
-        void push_front(const T &x_val) override {
-          vals.push_front(std::make_pair(x_val, --min_y_ctr));
-        }
-        void pop_front() override {
-          // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
-          ++min_y_ctr;
-          vals.pop_front();
-        }
-        void pop_back() override {
-          --max_y_ctr;
-          vals.pop_back();
-        }
-        // O(NlogN) efficient offline algorithm (tau-b)
-        corr_type kendall_tau() const noexcept override {
-          return OfflineCorr::kendall_tau(vals);
-          //return OfflineCorr::slow_kendall_tau<T>(vals);
-        }
-        size_t size() const noexcept override { return vals.size(); }
-    };
   }
+
   namespace OnlineCorr {
+    template< class TX, class TY >
+    class Kendall : public Base<TX, TY> {
+      public:
+        virtual void add(const TX &x_val, const TY &y_val) = 0;
+        virtual void remove(const TX &x_val, const TY &y_val) = 0;
+        virtual corr_type r() const noexcept = 0;
+        virtual size_t size() const noexcept = 0;
+    };
     template<class TX, class TY>
     struct SegmentTreeNode {
       CountingTree<TY> ctr_tree;
@@ -212,10 +182,12 @@ namespace FastCorr {
           if (pos < (width>>1)) {
             assert(FAST_CORR_LIKELY(l != NULL));
             l->erase_lowerbound(pos, add_val);
+            if (l->ctr_tree.size() == 0) delete l, l = NULL;
           }
           else {
             assert(FAST_CORR_LIKELY(r != NULL));
             r->erase_lowerbound(pos - (width>>1), add_val);
+            if (r->ctr_tree.size() == 0) delete r, r = NULL;
           }
         }
       }
@@ -257,8 +229,8 @@ namespace FastCorr {
       return e;
     }
     /** Online Kendall Algorithm when X_i of added pairs are all positive integers from 0 to MAX_X
-     * time complexity is O(log N * log MAX_X)
-     * space complexity is O(N log N * log MAX_X) overall
+     * Time complexity: O(log N * log MAX_X)
+     * Space complexity: O(N log N * log MAX_X) overall
      */
     template<class TX, class TY>
     class KendallOnBoundedX : public Kendall<TX, TY> {
@@ -314,9 +286,9 @@ namespace FastCorr {
         void remove(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
           _remove_value(x_val, y_val);
-          update_KL<-1>(x_val, y_val);
           // id to be erased doesn't necessarily match for different nodes
           root->erase_lowerbound(x_val, std::make_pair(y_val, 0u));
+          update_KL<-1>(x_val, y_val);
           --N;
         }
         corr_type r() const noexcept override {
@@ -334,8 +306,8 @@ namespace FastCorr {
         }
     };
     /** Online Kendall Algorithm when Y_i of added pairs are all positive integers from 0 to MAX_X
-     * time complexity is O(log N * log MAX_X)
-     * space complexity is O(N log N * log MAX_X) overall
+     * Time complexity: O(log N * log MAX_X)
+     * Space complexity: O(N log N * log MAX_X) overall
      * Internally this is equivalent to KendallOnBoundedX, with x and y being exchanged
      */
     template<class TX, class TY>
@@ -440,8 +412,8 @@ namespace FastCorr {
     }
 
   }
-}
-namespace FastCorr {
+
+  // ===== Wrapper Classes for benchmark ============================================== //
   namespace MonotonicOnlineCorr {
     template< class T >
     class OnlineNoLimKendallForBenchmark : public KendallBase<T> {
@@ -476,6 +448,39 @@ namespace FastCorr {
           vals.pop_back();
         }
         corr_type kendall_tau() const noexcept override { return kd.r(); }
+        size_t size() const noexcept override { return vals.size(); }
+    };
+
+    template< class T >
+    class OfflineKendallForBenchmark : public KendallBase<T> {
+      int min_y_ctr = 0, max_y_ctr = 0;
+      std::deque<std::pair<T, T> > vals;
+
+      public:
+        OfflineKendallForBenchmark() {}
+        OfflineKendallForBenchmark(const std::vector<T> &x_vals) {
+          for (auto &x : x_vals) push_back(x);
+        }
+        void push_back(const T &x_val) override {
+          vals.push_back(std::make_pair(x_val, max_y_ctr++));
+        }
+        void push_front(const T &x_val) override {
+          vals.push_front(std::make_pair(x_val, --min_y_ctr));
+        }
+        void pop_front() override {
+          // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
+          ++min_y_ctr;
+          vals.pop_front();
+        }
+        void pop_back() override {
+          --max_y_ctr;
+          vals.pop_back();
+        }
+        // O(NlogN) efficient offline algorithm (tau-b)
+        corr_type kendall_tau() const noexcept override {
+          return OfflineCorr::kendall_tau(vals);
+          //return OfflineCorr::slow_kendall_tau<T>(vals);
+        }
         size_t size() const noexcept override { return vals.size(); }
     };
   }
