@@ -111,6 +111,25 @@ TEST_CASE("OnlineCorr::Pearson with a lot of operations") {
   }
 }
 
+TEST_CASE("OnlineCorr::KendallOnBoundedX/Y with a lot of operations") {
+  vector<std::pair<int, double>> pairs;
+  int Q = 1000;
+  const int W = 100000;
+  OnlineCorr::KendallOnBoundedX<int, int> kd(W);
+  for (int i=0; i<Q; ++i) pairs.push_back({ rand() % (W+1), rand()/100.0 });
+
+  SUBCASE("compare with offline algorithm") {
+    for (int i=0; i<Q; ++i) kd.add(pairs[i].first, pairs[i].second);
+    CHECK(abs( OfflineCorr::kendall_tau(pairs) - kd.r()) < EPS);
+    for (int i=0; i<Q; ++i) {
+      kd.remove(pairs[i].first, pairs[i].second);
+      pairs[i] = { rand() % (W+1), rand()/100.0 };
+      kd.add(pairs[i].first, pairs[i].second);
+      CHECK(abs( OfflineCorr::kendall_tau(pairs) - kd.r()) < EPS);
+    }
+  }
+}
+
 TEST_CASE("check results with Python's scipy.stats") {
   //string python_cmd = "python3";
   if (!getenv("PYTHON_CMD")) {

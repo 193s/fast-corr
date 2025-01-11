@@ -148,6 +148,7 @@ namespace FastCorr {
         virtual void add(const TX &x_val, const TY &y_val) = 0;
         virtual void remove(const TX &x_val, const TY &y_val) = 0;
         virtual corr_type r() const noexcept = 0;
+        corr_type kendall_tau() const noexcept { return r(); };
         virtual size_t size() const noexcept = 0;
     };
     template<class TX, class TY>
@@ -220,6 +221,20 @@ namespace FastCorr {
           else return lsum + r->count_sum(pos - (width>>1), y_val);
         }
       }
+      // get the reference to the node of specified position: 0 <= pos < width is assumed
+      SegmentTreeNode<TX, TY>* at(const TX &pos) {
+        if (FAST_CORR_UNLIKELY(width == 1)) return this;
+        else {
+          if (pos < (width>>1)) {
+            if (!l) return NULL;
+            else return l->at(pos);
+          }
+          else {
+            if (!r) return NULL;
+            else return r->at(pos - (width>>1));
+          }
+        }
+      }
     };
     // smallest 2^n such that 2^n >= x
     template<class TX>
@@ -262,14 +277,29 @@ namespace FastCorr {
       // add: SGN=1, remove: SGN=-1
       template<const int SGN=1>
       inline void update_KL(const TX &x_val, const TY &y_val) {
+        auto lower_y = std::make_pair(y_val, 0u), upper_y = std::make_pair(y_val, UINT_MAX);
+        // time cost: [ ... ] -> O(log^2N) query / ( ...) -> O(logN) query
+        //
+        // [a3]|[a4]|  K
+        // ----+----+----
+        //     |    |     -> sum: ctr_Y[y_val]
+        // ----+----+----
+        // [a1]|(a2)|(..) -> sum: s1
         // left side: x in [0, x_val)
-        K += SGN*root->count_sum(x_val, std::make_pair(y_val, 0u));
-        L += SGN*(root->size_sum(x_val) - root->count_sum(x_val, std::make_pair(y_val, UINT_MAX)));
+        int a1 = root->count_sum(x_val, lower_y); // #{ (*<x, *<y) }
+        int a3 = root->size_sum(x_val) - root->count_sum(x_val, upper_y); // #{ (*<x, *>y) }
+        K += SGN*a1;
+        L += SGN*a3;
         // right side: x in [x_val+1, MAX_X+1)
-        K += SGN*((root->size_sum(MAX_X+1) - root->count_sum(MAX_X+1, std::make_pair(y_val, UINT_MAX)))
-                - (root->size_sum(x_val+1) - root->count_sum(x_val+1, std::make_pair(y_val, UINT_MAX))));
-        L += SGN*(root->count_sum(MAX_X+1, std::make_pair(y_val, 0u))
-                - root->count_sum(x_val+1, std::make_pair(y_val, 0u)));
+        //K += SGN*((root->ctr_tree.size() - root->ctr_tree.order_of_key(upper_y))
+        //        - (root->size_sum(x_val+1) - root->count_sum(x_val+1, upper_y))); // #{ (*>x, *>y) }
+        auto exact_x = root->at(x_val);
+        int a2 = exact_x ? exact_x->ctr_tree.order_of_key(lower_y) : 0; // #{ (x, *<y) }
+        int s1 = root->ctr_tree.order_of_key(lower_y);
+        int a4 = exact_x ? (exact_x->ctr_tree.size() - exact_x->ctr_tree.order_of_key(upper_y)) : 0;
+        auto it = ctr_Y.find(y_val);
+        K += SGN*(root->ctr_tree.size() - (s1 + ((it == ctr_Y.end()) ? 0 : it->second) + a3 + a4));
+        L += SGN*(s1 - a1 - a2); // #{ (*>x, *<y) }
       }
       public:
         KendallOnBoundedX(TX MAX_X) : MAX_X(MAX_X) {
@@ -278,8 +308,8 @@ namespace FastCorr {
         }
         void add(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
-          _add_value(x_val, y_val);
           update_KL<+1>(x_val, y_val);
+          _add_value(x_val, y_val);
           root->add(x_val, std::make_pair(y_val, ++id_for_tree));
           ++N;
         }
@@ -305,7 +335,7 @@ namespace FastCorr {
           return N;
         }
     };
-    /** Online Kendall Algorithm when Y_i of added pairs are all positive integers from 0 to MAX_X
+    /** Online Kendall Algorithm when Y_i of added pairs are all positive integers from 0 to MAX_Y
      * Time complexity: O(log N * log MAX_X)
      * Space complexity: O(N log N * log MAX_X) overall
      * Internally this is equivalent to KendallOnBoundedX, with x and y being exchanged

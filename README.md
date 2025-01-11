@@ -21,7 +21,7 @@ Details and applications of the constraints are discussed in my paper yet to be 
 - `void push_back(const T &x_val)`
 - `void pop_front()`
 - `void pop_back()`
-- `double spearman_r()` (alias: `double r()`)
+- `double spearman_r() const noexcept` (alias: `double r()`)
 
 OnlineSpearmanLinear\<T\> works a bit faster on smaller `N`s and uses fewer memory space.  
 `T` can be `int`, `double`, ... or any other type with comparison operators defined.  
@@ -32,7 +32,7 @@ Currently works a bit faster on g++.
 - `void push_back(const T &x_val)`
 - `void pop_front()`
 - `void pop_back()`
-- `double kendall_tau()` (alias: `double r()`)  
+- `double kendall_tau() const noexcept` (alias: `double r()`)  
 
 `kendall_tau()` function returns tau-b (tau-c option will be added soon).
 
@@ -42,15 +42,32 @@ Currently works a bit faster on g++.
 | Class name | Time complexity of each operation | Overall memory use |
 | ---- | ---- | ---- |
 | FastCorr::OnlineCorr::Pearson | O(1) | O(1) |
+| FastCorr::OnlineCorr::KendallOnBoundedX | O(log N \* log MAX\_X) | O(Nlog MAX\_X) |
+| FastCorr::OnlineCorr::KendallOnBoundedY | O(log N \* log MAX\_Y) | O(Nlog MAX\_Y) |
 <!--| FastCorr::OnlineCorr::Spearman\<T\> | O(logN) |
 | FastCorr::OnlineCorr::Kendall\<T\> | O(N) |-->
+
+#### FastCorr::OnlineCorr::KendallOnBoundedX\<TX, TY\>
+Online Kendall Algorithm when **X\_i of added pairs are all positive integers from 0 to MAX\_X**.  
+TX must be an integral type (int, long long, etc).  
+  - `void add(const TX &x_val, const TY &y_val)`
+  - `void remove(const TX &x_val, const TY &y_val)`
+  - `double kendall_tau() const noexcept` (alias: `double r()`)
+
+##### (FastCorr::OnlineCorr::KendallOnBoundedY\<TX, TY\>)
+Online Kendall Algorithm when **Y\_i of added pairs are all positive integers from 0 to MAX\_Y**.  
+Internally this is equivalent to KendallOnBoundedX, with x and y being exchanged.  
+TY must be an integral type (int, long long, etc).  
+  - `void add(const TX &x_val, const TY &y_val)`
+  - `void remove(const TX &x_val, const TY &y_val)`
+  - `double kendall_tau() const noexcept` (alias: `double r()`)
 
 #### FastCorr::OnlineCorr::Pearson
 Online algorithm works on O(1) time complexity on each query and uses O(1) memory space.  
 The result may contain errors incurred by arhithmetic operations of double datatype.  
   - `void add(double x_val, double y_val)`
   - `void remove(double x_val, double y_val)`
-  - `double pearson_r()` (alias: `double r()`)
+  - `double pearson_r() const noexcept` (alias: `double r()`)
 
 ----------------
 
@@ -61,12 +78,12 @@ The result may contain errors incurred by arhithmetic operations of double datat
 | FastCorr::OfflineCorr::kendall\_tau\<TX, TY\> | O(NlogN) |
 | FastCorr::OfflineCorr::pearson\_r        | O(N)     |
 
-This is nothing new, just a very straightforward set of implementations. The Kendall implementation is comparatively more efficient.  
+The Kendall implementation is comparatively more efficient.  
+Others are nothing new, just a set of very straightforward implementations.  
 - `double FastCorr::OfflineCorr::spearman_r<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
 - `double FastCorr::OfflineCorr::kendall_tau<TX, TY>(const vector<TX> &x_vals, const vector<TY> &y_vals)`
 - `double FastCorr::OfflineCorr::pearson_r(const vector<double> &x_vals, const vector<double> &y_vals)`
 
-----------------
 
 ## Usage
 (Makefile takes C\_COMPILER environment variable: e.g. `C_COMPILER='clang++ --std=c++14' make`)
@@ -81,23 +98,19 @@ This is nothing new, just a very straightforward set of implementations. The Ken
 T=10000, N=1000
 ========= SPEARMAN =========
 [MonotonicOnlineCorr::Spearman] O(logN)
-average execution time: 9.50ms (loop=211)
+average execution time: 9.34ms (loop=215)
 [MonotonicOnlineCorr::SpearmanLinear] O(N)
-average execution time: 14.64ms (loop=137)
+average execution time: 14.17ms (loop=142)
 [Offline Spearman] O(NlogN)
-average execution time: 718.14ms (loop=3)
+average execution time: 726.37ms (loop=3)
 ========= KENDALL =========
 [MonotonicOnlineCorr::Kendall] O(logN)
-average execution time: 5.75ms (loop=349)
+average execution time: 5.61ms (loop=357)
 [OnlineCorr::KendallOnLimitedY] O(logN logU) (U = 1e6)
-average execution time: 61.12ms (loop=33)
+average execution time: 52.51ms (loop=39)
 [Offline Kendall] O(NlogN)
-average execution time: 734.21ms (loop=3)
+average execution time: 746.40ms (loop=3)
 ```
-<!--
-- `./a.out r <<< "20000 1000"` : testing on randomized sequence without duplicate values, T=20000, N=1000
-- `./a.out d <<< "20000 1000"` : testing on randomized sequence with duplicate values, T=20000, N=1000
--->
 
 ### running a sample code:
 `g++-14 sample.cpp -O3 -o sample && ./sample`  
