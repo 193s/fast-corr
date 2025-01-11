@@ -38,6 +38,7 @@ vector<double> generate_random_double_sequence(int T, int seed, bool duplicate) 
   for (int i=0; i<T; i++) A[i] = mt()/100000.0;
   if (duplicate) {
     for (int i=0; i<T/2; i++) A[i] = A[T-1-i];
+    //for (int i=0; i<T; i++) A[i] = mt()%4;
     shuffle(A.begin(), A.end(), mt);
   }
   else {
@@ -138,6 +139,11 @@ void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbo
           sp = new MonotonicOnlineCorr::Kendall<double>();
         }
         else if (repeat == 1) {
+          // O(logN logU) offline implementation (U = MAX_Q ~ len(operations))
+          if (verbose) cout << "[OnlineCorr::KendallOnLimitedY] O(logN logU) (U = 1e6)\n";
+          sp = new MonotonicOnlineCorr::OnlineNoLimKendallForBenchmark<double>(1e6);
+        }
+        else if (repeat == 2) {
           // O(NlogN) offline implementation
           if (verbose) cout << "[Offline Kendall] O(NlogN)\n";
           sp = new MonotonicOnlineCorr::OfflineKendallForBenchmark<double>();

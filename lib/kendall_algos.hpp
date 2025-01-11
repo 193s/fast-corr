@@ -10,6 +10,16 @@
 #include "fast_corr_base.hpp"
 
 namespace FastCorr {
+  namespace OnlineCorr {
+    template< class TX, class TY >
+    class Kendall : public Base<TX, TY> {
+      public:
+        virtual void add(const TX &x_val, const TY &y_val) = 0;
+        virtual void remove(const TX &x_val, const TY &y_val) = 0;
+        virtual corr_type r() const noexcept = 0;
+        virtual size_t size() const noexcept = 0;
+    };
+  }
   namespace OfflineCorr {
     // O(NlogN) efficient offline algorithm (tau-b)
     template< class TX, class TY >
@@ -135,6 +145,7 @@ namespace FastCorr {
         size_t size() const noexcept override { return vals.size(); }
     };
 
+
     template< class T >
     class OfflineKendallForBenchmark : public KendallBase<T> {
       int min_y_ctr = 0, max_y_ctr = 0;
@@ -169,37 +180,153 @@ namespace FastCorr {
     };
   }
   namespace OnlineCorr {
-    // TODO
-    template< class TX, class TY >
-    class Kendall : public Base<TX, TY> {
-      public:
-        virtual void add(const TX &x_val, const TY &y_val) = 0;
-        virtual void remove(const TX &x_val, const TY &y_val) = 0;
-        virtual corr_type r() const = 0;
-        virtual size_t size() const = 0;
+    template<class TX, class TY>
+    struct SegmentTreeNode {
+      CountingTree<TY> ctr_tree;
+      TX width;
+      SegmentTreeNode<TX, TY> *l = NULL, *r = NULL;
+      // width needs to be 2^n for some integer n
+      SegmentTreeNode(const TX &width) : width(width) {}
+      // 0 <= pos < width is assumed
+      void add(const TX &pos, const TY &add_val) {
+        ctr_tree.insert(add_val);
+        if (FAST_CORR_UNLIKELY(width == 1)) assert(pos == 0);
+        if (FAST_CORR_UNLIKELY(width == 1)) return;
+        else {
+          if (pos < (width>>1)) {
+            if (!l) l = new SegmentTreeNode(width>>1);
+            l->add(pos, add_val);
+          }
+          else {
+            if (!r) r = new SegmentTreeNode(width>>1);
+            r->add(pos - (width>>1), add_val);
+          }
+        }
+      }
+      // 0 <= pos < width is assumed
+      void erase_lowerbound(const TX &pos, const TY &add_val) {
+        int z = ctr_tree.order_of_key(add_val);
+        ctr_tree.erase_kth(z); // erase minimum value greater than add_val
+        if (FAST_CORR_UNLIKELY(width == 1)) return;
+        else {
+          if (pos < (width>>1)) {
+            assert(FAST_CORR_LIKELY(l != NULL));
+            l->erase_lowerbound(pos, add_val);
+          }
+          else {
+            assert(FAST_CORR_LIKELY(r != NULL));
+            r->erase_lowerbound(pos - (width>>1), add_val);
+          }
+        }
+      }
+      // calculate sum(ctr_tree.size()) of [0, pos): 0 <= pos < width is assumed
+      int size_sum(const TX &pos) const {
+        if (pos == 0) return 0;
+        if (FAST_CORR_UNLIKELY(width == pos)) return ctr_tree.size();
+        // width > 1
+        if (pos < (width>>1)) {
+          if (!l) return 0;
+          else return l->size_sum(pos);
+        }
+        else {
+          int lsize = l?(int)l->ctr_tree.size():0;
+          if (!r) return lsize;
+          else return lsize + r->size_sum(pos - (width>>1));
+        }
+      }
+      // count sum(ctr_tree.order_of_key(y_val)) of [0, pos): 0 <= pos < width is assumed
+      int count_sum(const TX &pos, const TY &y_val) const {
+        if (pos == 0) return 0;
+        if (FAST_CORR_UNLIKELY(width == pos)) return ctr_tree.order_of_key(y_val);
+        if (pos < (width>>1)) {
+          if (!l) return 0;
+          else return l->count_sum(pos, y_val);
+        }
+        else {
+          int lsum = l?(int)l->ctr_tree.order_of_key(y_val):0;
+          if (!r) return lsum;
+          else return lsum + r->count_sum(pos - (width>>1), y_val);
+        }
+      }
     };
-
+    // smallest 2^n such that 2^n >= x
+    template<class TX>
+    inline TX smallest_power2_larger_than(const TX &x) {
+      TX e = 1;
+      while (e<x) e<<=1;
+      return e;
+    }
     /** Online Kendall Algorithm when X_i of added pairs are all positive integers from 0 to MAX_X
      * time complexity is O(log N * log MAX_X)
      * space complexity is O(N log N * log MAX_X) overall
      */
     template<class TX, class TY>
-    class KendallOnBoundedX : public Base<TX, TY> {
+    class KendallOnBoundedX : public Kendall<TX, TY> {
       static_assert(std::is_integral<TX>::value, "TX must be an integral type (int, long long, etc)");
+      const TX MAX_X;
+      int N = 0;
+      SegmentTreeNode<TX, std::pair<TY, unsigned int>> *root = NULL;
+      unsigned int id_for_tree = 0u; // add unique id to allow for duplicate values in CountingTree
+                                    // this is assuming # of add queries < UINT_MAX
+      std::map<TX, int> ctr_X;
+      std::map<TY, int> ctr_Y;
+      kd_n2_type K = 0, L = 0, n1 = 0, n2 = 0;
+      inline void _add_value(const TX &x_val, const TY &y_val) {
+        n1 += ctr_X[x_val]++;
+        n2 += ctr_Y[y_val]++;
+      }
+      inline void _remove_value(const TX &x_val, const TY &y_val) {
+        // equivalent to n1 -= --ctr_X[x_val]
+        int tmp = ctr_X[x_val] - 1;
+        n1 -= tmp;
+        if (tmp == 0) ctr_X.erase(x_val);
+        else ctr_X[x_val] = tmp;
+        // equivalent to n2 -= --ctr_Y[y_val]
+        tmp = ctr_Y[y_val] - 1;
+        n2 -= tmp;
+        if (tmp == 0) ctr_Y.erase(y_val);
+        else ctr_Y[y_val] = tmp;
+      }
+      // add: SGN=1, remove: SGN=-1
+      template<const int SGN=1>
+      inline void update_KL(const TX &x_val, const TY &y_val) {
+        // left side: x in [0, x_val)
+        K += SGN*root->count_sum(x_val, std::make_pair(y_val, 0u));
+        L += SGN*(root->size_sum(x_val) - root->count_sum(x_val, std::make_pair(y_val, UINT_MAX)));
+        // right side: x in [x_val+1, MAX_X+1)
+        K += SGN*((root->size_sum(MAX_X+1) - root->count_sum(MAX_X+1, std::make_pair(y_val, UINT_MAX)))
+                - (root->size_sum(x_val+1) - root->count_sum(x_val+1, std::make_pair(y_val, UINT_MAX))));
+        L += SGN*(root->count_sum(MAX_X+1, std::make_pair(y_val, 0u))
+                - root->count_sum(x_val+1, std::make_pair(y_val, 0u)));
+      }
       public:
-        const TX MAX_X;
-        int N = 0;
         KendallOnBoundedX(TX MAX_X) : MAX_X(MAX_X) {
+          root = new SegmentTreeNode<TX, std::pair<TY, unsigned int>>
+                                    (smallest_power2_larger_than<TX>(MAX_X+1));
         }
         void add(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
+          _add_value(x_val, y_val);
+          update_KL<+1>(x_val, y_val);
+          root->add(x_val, std::make_pair(y_val, ++id_for_tree));
           ++N;
         }
         void remove(const TX &x_val, const TY &y_val) override {
           assert(0 <= x_val && x_val <= MAX_X);
+          _remove_value(x_val, y_val);
+          update_KL<-1>(x_val, y_val);
+          // id to be erased doesn't necessarily match for different nodes
+          root->erase_lowerbound(x_val, std::make_pair(y_val, 0u));
           --N;
         }
         corr_type r() const noexcept override {
+          kd_n2_type n0 = (kd_n2_type)N*(N-1)/2;
+          if (FAST_CORR_UNLIKELY(n1 == n0 || n2 == n0)) return corr_NAN; // denominator will be 0 on tau-b/c
+          return (corr_type)(K-L) / (
+              (corr_type)n0 * sqrt(
+                ((corr_type)1.0-(corr_type)n1/(corr_type)n0) *
+                ((corr_type)1.0-(corr_type)n2/(corr_type)n0)
+                )); // tau-b (n2=0)
           return 0;
         }
         size_t size() const noexcept override {
@@ -212,7 +339,7 @@ namespace FastCorr {
      * Internally this is equivalent to KendallOnBoundedX, with x and y being exchanged
      */
     template<class TX, class TY>
-    class KendallOnBoundedY : public Base<TX, TY> {
+    class KendallOnBoundedY : public Kendall<TX, TY> {
       static_assert(std::is_integral<TY>::value, "TY must be an integral type (int, long long, etc)");
       KendallOnBoundedX<TY, TX> algo;
       public:
@@ -312,5 +439,44 @@ namespace FastCorr {
       //return 2.0*(double)(K-L) / (n*n * (double)(m-1) / (double)m); // tau-c
     }
 
+  }
+}
+namespace FastCorr {
+  namespace MonotonicOnlineCorr {
+    template< class T >
+    class OnlineNoLimKendallForBenchmark : public KendallBase<T> {
+      int min_y_ctr, max_y_ctr;
+      OnlineCorr::KendallOnBoundedY<T, int> kd;
+      std::deque<std::pair<T, T> > vals;
+
+      // assuming 0 <= min_y_ctr, max_y_ctr <= 2*MAX_Q
+      public:
+        OnlineNoLimKendallForBenchmark(int MAX_Q) : min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {}
+        OnlineNoLimKendallForBenchmark(int MAX_Q, const std::vector<T> &x_vals) :
+          min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {
+          for (auto &x : x_vals) push_back(x);
+        }
+        void push_back(const T &x_val) override {
+          kd.add(x_val, max_y_ctr);
+          vals.push_back(std::make_pair(x_val, max_y_ctr++));
+        }
+        void push_front(const T &x_val) override {
+          vals.push_front(std::make_pair(x_val, --min_y_ctr));
+          kd.add(x_val, min_y_ctr);
+        }
+        void pop_front() override {
+          // y_i should all decrease by 1, but we can simply ignore that as it won't affect the result
+          ++min_y_ctr;
+          kd.remove(vals.front().first, vals.front().second);
+          vals.pop_front();
+        }
+        void pop_back() override {
+          --max_y_ctr;
+          kd.remove(vals.back().first, vals.back().second);
+          vals.pop_back();
+        }
+        corr_type kendall_tau() const noexcept override { return kd.r(); }
+        size_t size() const noexcept override { return vals.size(); }
+    };
   }
 }

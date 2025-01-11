@@ -45,6 +45,46 @@ TEST_CASE("OnlineCorr::Pearson basic testing") {
   ps.remove(5, 3), xs.pop_back(), ys.pop_back();
   CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=1
 }
+TEST_CASE("OnlineCorr::KendallOnLimitedX/Y basic testing") {
+  FastCorr::OnlineCorr::Kendall<int, int> *kd = NULL;
+  for (int _=0; _<2; ++_) {
+    if (_ == 0) kd = new FastCorr::OnlineCorr::KendallOnBoundedX<int, int>(500);
+    else        kd = new FastCorr::OnlineCorr::KendallOnBoundedY<int, int>(500);
+    vector<double> xs, ys;
+    CHECK(isnan(OfflineCorr::kendall_tau(xs, ys))); CHECK(isnan(kd->r())); // N=0
+    kd->add(1, 4), xs.push_back(1), ys.push_back(4);
+    CHECK(isnan(OfflineCorr::kendall_tau(xs, ys))); CHECK(isnan(kd->r())); // N=1
+
+    // add(x, y)
+    kd->add(5, 3), xs.push_back(5), ys.push_back(3);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->add(1, 9), xs.push_back(1), ys.push_back(9);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->add(100, 2), xs.push_back(100), ys.push_back(2);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->add(1, 9), xs.push_back(1), ys.push_back(9);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->add(1, 9), xs.push_back(1), ys.push_back(9);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->add(321, 321), xs.push_back(321), ys.push_back(321);
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+
+    // remove(x, y)
+    kd->remove(321, 321), xs.pop_back(), ys.pop_back();
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->remove(1, 9), xs.pop_back(), ys.pop_back();
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->remove(1, 9), xs.pop_back(), ys.pop_back();
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->remove(100, 2), xs.pop_back(), ys.pop_back();
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+    kd->remove(1, 9), xs.pop_back(), ys.pop_back();
+    CHECK(abs( OfflineCorr::kendall_tau(xs, ys) - kd->r()) < EPS);
+
+    kd->remove(5, 3), xs.pop_back(), ys.pop_back();
+    CHECK(isnan(OfflineCorr::kendall_tau(xs, ys))); CHECK(isnan(kd->r())); // N=1
+  }
+}
 
 TEST_CASE("OnlineCorr::Pearson with a lot of operations") {
   OnlineCorr::Pearson ps;

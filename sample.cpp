@@ -6,7 +6,7 @@
 using std::cout;
 
 int main(int argc, char *argv[]) {
-  // online algorithm examples
+  // mononotic online algorithm examples
   auto sp = FastCorr::MonotonicOnlineCorr::Spearman<double>({0, 1, 1, 2, 2, 1});
   sp.push_back(321);
   cout << "spearman([0,1,1,2,2,1,321], [1,2,3,4,5,6,7]) = " << sp.spearman_r() << "\n";
@@ -24,11 +24,23 @@ int main(int argc, char *argv[]) {
       {1, 1, 2, 2, 1, 321},
       {1, 2, 3, 4, 5, 6});
   cout<<"sp2="<<sp2<<"\n";
-  assert(abs(sp2 - sp.spearman_r() < 1e-9));
+  assert(std::abs(sp2 - sp.spearman_r() < 1e-9));
   double kd2 = FastCorr::OfflineCorr::kendall_tau<double, double>(
       {1, 1, 2, 2, 1, 321},
       {1, 2, 3, 4, 5, 6});
   cout<<"kd2="<<kd2<<"\n";
-  assert(abs(kd2 - kd.kendall_tau() < 1e-9));
+  assert(std::abs(kd2 - kd.kendall_tau() < 1e-9));
+  // online algorithm examples
+  auto kd3 = FastCorr::OnlineCorr::KendallOnBoundedX<int, double>(10);
+  kd3.add(0, 0);
+  kd3.add(1, 1);
+  kd3.add(1, 2);
+  kd3.add(2, 3);
+  kd3.add(2, 4);
+  kd3.add(1, 5);
+  kd3.add(10, 6.4321);
+  cout<<"kd3="<<kd3.r()<<"\n";
+  kd3.remove(0, 0);
+  cout<<"kd3="<<kd3.r()<<"\n";
   return 0;
 }
