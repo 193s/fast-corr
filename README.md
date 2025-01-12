@@ -98,18 +98,18 @@ Others are nothing new, just a set of very straightforward implementations.
 T=10000, N=1000
 ========= SPEARMAN =========
 [MonotonicOnlineCorr::Spearman] O(logN)
-average execution time: 9.34ms (loop=215)
+average execution time: 9.27ms (loop=216)
 [MonotonicOnlineCorr::SpearmanLinear] O(N)
-average execution time: 14.17ms (loop=142)
+average execution time: 13.66ms (loop=147)
 [Offline Spearman] O(NlogN)
-average execution time: 726.37ms (loop=3)
+average execution time: 644.82ms (loop=4)
 ========= KENDALL =========
 [MonotonicOnlineCorr::Kendall] O(logN)
-average execution time: 5.61ms (loop=357)
-[OnlineCorr::KendallOnLimitedY] O(logN logU) (U = 1e6)
-average execution time: 52.51ms (loop=39)
+average execution time: 5.67ms (loop=353)
+[OnlineCorr::KendallOnBoundedY] O(logN logU) (U = 1e6)
+average execution time: 49.77ms (loop=41)
 [Offline Kendall] O(NlogN)
-average execution time: 746.40ms (loop=3)
+average execution time: 700.26ms (loop=3)
 ```
 
 ### running a sample code:

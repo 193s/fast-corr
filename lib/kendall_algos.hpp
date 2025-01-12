@@ -364,14 +364,20 @@ namespace FastCorr {
     template< class TX, class TY >
     corr_type kendall_tau(const std::vector< std::pair<TX, TY> > &vals) {
       std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
-      std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+      std::sort(sorted.begin(), sorted.end(),
+          [&](std::pair<TX, TY> i, std::pair<TX, TY> j) {
+            return i.first < j.first; // this is faster: order of the second values does not matter
+          });
       return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
     }
     // O(NlogN) efficient offline algorithm (tau-b): wrapper for deque
     template< class TX, class TY >
     corr_type kendall_tau(const std::deque< std::pair<TX, TY> > &vals) {
       std::vector< std::pair<TX, TY> > sorted(vals.begin(), vals.end());
-      std::sort(sorted.begin(), sorted.end()); // O(nlogn)
+      std::sort(sorted.begin(), sorted.end(),
+          [&](std::pair<TX, TY> i, std::pair<TX, TY> j) {
+            return i.first < j.first; // this is faster: order of the second values does not matter
+          });
       return internal_kendall_tau_on_sorted_pairs<TX, TY>(sorted);
     }
     // wrapper for two vectors

@@ -91,7 +91,10 @@ namespace FastCorr {
     // n>=2
     std::vector<std::pair<T, int> > X2(n);
     for (int i=0; i<n; ++i) X2[i] = std::pair<T, int>(X[i], i);
-    std::sort(X2.begin(), X2.end()); // O(nlogn)
+    std::sort(X2.begin(), X2.end(), // O(nlogn)
+        [&](std::pair<T, int> i, std::pair<T, int> j) {
+          return i.first < j.first; // this is faster: order of the second values does not matter
+        });
     std::vector<int> ret(n);
     //for (int i=0; i<n; ++i) ret[X2[i].second] = 2*(i+1); // works only on unique arrays
     int z = 0, head = 0;

@@ -17,7 +17,7 @@ using namespace FastCorr;
 
 int LOOP = 3;
 std::chrono::duration<double, std::milli> BENCHMARK_MAX_ALLOWED_MS(2*1000); // 2 sec
-const int BENCHMARK_MINIMUM_TIMES = 1;
+const int BENCHMARK_MINIMUM_TIMES = 3;
 
 const double EPS = 1e-9;
 enum class OPERATION_TYPE { PUSH_FRONT, PUSH_BACK, POP_FRONT, POP_BACK, CALCULATE_R, RESTART_TIMER };
