@@ -447,15 +447,16 @@ namespace FastCorr {
   namespace MonotonicOnlineCorr {
     template< class T >
     class OnlineNoLimKendallForBenchmark : public KendallBase<T> {
-      int min_y_ctr, max_y_ctr;
+      int MAX_Q, min_y_ctr, max_y_ctr;
       OnlineCorr::KendallOnBoundedY<T, int> kd;
       std::deque<std::pair<T, T> > vals;
 
       // assuming 0 <= min_y_ctr, max_y_ctr <= 2*MAX_Q
       public:
-        OnlineNoLimKendallForBenchmark(int MAX_Q) : min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {}
+        OnlineNoLimKendallForBenchmark(int MAX_Q) :
+          MAX_Q(MAX_Q), min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {}
         OnlineNoLimKendallForBenchmark(int MAX_Q, const std::vector<T> &x_vals) :
-          min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {
+          MAX_Q(MAX_Q), min_y_ctr(MAX_Q), max_y_ctr(MAX_Q), kd(2*MAX_Q) {
           for (auto &x : x_vals) push_back(x);
         }
         void push_back(const T &x_val) override {
@@ -476,6 +477,10 @@ namespace FastCorr {
           --max_y_ctr;
           kd.remove(vals.back().first, vals.back().second);
           vals.pop_back();
+        }
+        void reset() {
+          assert(size() == 0);
+          min_y_ctr = max_y_ctr = MAX_Q;
         }
         corr_type kendall_tau() const noexcept override { return kd.r(); }
         size_t size() const noexcept override { return vals.size(); }

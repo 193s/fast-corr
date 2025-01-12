@@ -12,7 +12,7 @@ TEST_CASE("benchmark seed") {
     SEED = stoi(getenv("SEED"));
     //MESSAGE("env SEED specified: SEED = ", SEED, " (default=time(NULL))");
   }
-  if (getenv("BENCHMARK_T")) BENCHMARK_N = stoi(getenv("BENCHMARK_T"));
+  if (getenv("BENCHMARK_T")) BENCHMARK_T = stoi(getenv("BENCHMARK_T"));
   if (getenv("BENCHMARK_N")) BENCHMARK_N = stoi(getenv("BENCHMARK_N"));
 }
 TEST_CASE("random test with duplicates: T=5000 random operations") {

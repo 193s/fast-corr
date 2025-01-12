@@ -140,7 +140,7 @@ void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbo
         }
         else if (repeat == 1) {
           // O(logN logU) offline implementation (U = MAX_Q ~ len(operations))
-          if (verbose) cout << "[OnlineCorr::KendallOnLimitedY] O(logN logU) (U = 1e6)\n";
+          if (verbose) cout << "[OnlineCorr::KendallOnBoundedY] O(logN logU) (U = 1e6)\n";
           sp = new MonotonicOnlineCorr::OnlineNoLimKendallForBenchmark<double>(1e6);
         }
         else if (repeat == 2) {
@@ -185,6 +185,9 @@ void internal_test(vector< pair<OPERATION_TYPE, double> > operations, bool verbo
           }
         }
         REQUIRE(sp->size() == 0);
+        if (corr_type == 1 && repeat == 1) {
+          ((FastCorr::MonotonicOnlineCorr::OnlineNoLimKendallForBenchmark<double> *)sp)->reset();
+        }
         auto t2 = high_resolution_clock::now();
         duration<double, std::milli> ms_double = t2 - t1;
         if (verbose && loop_counter >= BENCHMARK_MINIMUM_TIMES && (t2-t1) > BENCHMARK_MAX_ALLOWED_MS) { // benchmark mode: loop end

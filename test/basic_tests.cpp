@@ -45,7 +45,7 @@ TEST_CASE("OnlineCorr::Pearson basic testing") {
   ps.remove(5, 3), xs.pop_back(), ys.pop_back();
   CHECK(isnan(OfflineCorr::pearson_r(xs, ys))); CHECK(isnan(ps.pearson_r())); // N=1
 }
-TEST_CASE("OnlineCorr::KendallOnLimitedX/Y basic testing") {
+TEST_CASE("OnlineCorr::KendallOnBoundedX/Y basic testing") {
   FastCorr::OnlineCorr::Kendall<int, int> *kd = NULL;
   for (int _=0; _<2; ++_) {
     if (_ == 0) kd = new FastCorr::OnlineCorr::KendallOnBoundedX<int, int>(500);
